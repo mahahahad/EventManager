@@ -22,7 +22,7 @@ export default async function AdminPage() {
         <div>
             <h1>Admin Dashboard</h1>
             <EventForm />
-            <AddEvent />
+            {/* <AddEvent /> */}
             <ul>
                 {events?.map((event) => (
                     <li key={event.id}>
