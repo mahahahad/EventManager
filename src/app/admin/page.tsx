@@ -1,39 +1,50 @@
-import EventForm from "@/components/EventForm";
-import AddEvent from "./addEvent";
-import EditEvent from "./editEvent";
+"use client";
+
+import { useEffect, useState } from "react";
+import { useRouter } from "next/navigation";
 import { supabase } from "@/lib/supabaseClient";
+import AdminDashboard from "@/components/AdminDashboard";
 
-export default async function AdminPage() {
-    const { data: events = [], error } = await supabase
-        .from("events")
-        .select("*");
+export default function AdminPage() {
+    const [isAdmin, setIsAdmin] = useState(false);
+    const [checked, setChecked] = useState(false);
+    const router = useRouter();
 
-    const deleteEvent = async (id: string) => {
-        const { error } = await supabase.from("events").delete().eq("id", id);
-        if (error) {
-            console.error("Error deleting event:", error);
-            alert("Something went wrong 😢 Try again!");
-        } else {
-            alert("Event deleted successfully! 🎉");
-        }
-    };
+    useEffect(() => {
+        const checkAdmin = async () => {
+            const { data: authData, error: authError } =
+                await supabase.auth.getUser();
+
+            if (authError || !authData.user) {
+                router.replace("/");
+                return;
+            }
+
+            const email = authData.user.email;
+
+            const { data: usersData, error: usersError } = await supabase
+                .from("users")
+                .select("is_admin")
+                .eq("email", email)
+                .single();
+
+            if (usersError || !usersData?.is_admin) {
+                router.replace("/");
+                return;
+            }
+
+            setIsAdmin(true);
+            setChecked(true);
+        };
+
+        checkAdmin();
+    }, [router]);
+
+    if (!isAdmin || !checked) return null;
 
     return (
-        <div>
-            <h1>Admin Dashboard</h1>
-            <EventForm />
-            {/* <AddEvent /> */}
-            <ul>
-                {events?.map((event) => (
-                    <li key={event.id}>
-                        <strong>{event.title}</strong> - {event.date}
-                        <EditEvent event={event} />
-                        <button onClick={() => deleteEvent(event.id)}>
-                            Delete
-                        </button>
-                    </li>
-                ))}
-            </ul>
+        <div className="p-4">
+            <AdminDashboard />
         </div>
     );
 }

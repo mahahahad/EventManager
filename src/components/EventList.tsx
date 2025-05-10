@@ -33,7 +33,7 @@ export default function EventList({ isAdmin }: { isAdmin: boolean }) {
     const handleEditClick = (event: Event) => {
         setEditingId(event.id); // ✅ Set this event into edit mode
         setEditTitle(event.title); // ✅ Initialize input with current title
-        setTimeout(() => inputRef.current?.focus(), 100); // ✅ Delays focus slightly to avoid rendering issues
+        setTimeout(() => inputRef.current?.focus(), 10); // ✅ Delays focus slightly to avoid rendering issues
     };
 
     const handleSaveClick = async (eventId: string) => {
