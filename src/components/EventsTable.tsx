@@ -1,26 +1,27 @@
 "use client";
 
-import { ColumnDef } from "@tanstack/react-table";
-import { DataTable } from "@/components/ui/data-table";
 import { useEffect, useState } from "react";
+import { ColumnDef } from "@tanstack/react-table";
 import { supabase } from "@/lib/supabaseClient";
+import { Input } from "@/components/ui/input";
 import {
     Dialog,
     DialogContent,
-    DialogDescription,
     DialogHeader,
     DialogTitle,
+    DialogDescription,
 } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
+import { DataTable } from "./ui/data-table";
 
-const columns: ColumnDef<any>[] = [
-    { accessorKey: "title", header: "Event Title" },
-    { accessorKey: "start_time", header: "Start Time" },
-    { accessorKey: "location", header: "Location" },
-];
+type SimpleColumn = {
+    id: string;
+    header: string;
+};
 
 export default function EventsTable() {
     const [events, setEvents] = useState<any[]>([]);
+    const [searchTerm, setSearchTerm] = useState("");
     const [selectedEvent, setSelectedEvent] = useState<any | null>(null);
     const [dialogOpen, setDialogOpen] = useState(false);
 
@@ -37,9 +38,31 @@ export default function EventsTable() {
     }, []);
 
     const handleRowClick = (event: any) => {
-        setSelectedEvent(event);
-        setDialogOpen(true);
+        if (event.title !== "...") {
+            setSelectedEvent(event);
+            setDialogOpen(true);
+        }
     };
+
+    const filteredEvents = events
+        .filter(
+            (event) =>
+                event.title.toLowerCase().includes(searchTerm.toLowerCase()) ||
+                event.location.toLowerCase().includes(searchTerm.toLowerCase())
+        )
+        .slice(0, 5);
+
+    // Append an empty row at the end to indicate more events
+    const modifiedEvents = [
+        ...filteredEvents,
+        { title: "...", start_time: null, location: "" },
+    ];
+
+    const columns: ColumnDef<any>[] = [
+        { accessorKey: "title", header: "Event Title" },
+        { accessorKey: "start_time", header: "Start Time" },
+        { accessorKey: "location", header: "Location" },
+    ];
 
     const handleOpenEventPage = (event: any) => {
         window.open(
@@ -49,55 +72,70 @@ export default function EventsTable() {
     };
 
     return (
-        <div className="p-4">
-            <h1 className="text-2xl font-bold mb-4">Upcoming Events</h1>
+        <div className="flex justify-center">
+            <div className="w-[75%] p-4">
+                <div className="flex justify-between items-center mb-6">
+                    <h1 className="text-2xl font-bold">Upcoming Events</h1>
+                    <Input
+                        placeholder="Search events..."
+                        value={searchTerm}
+                        onChange={(e) => setSearchTerm(e.target.value)}
+                        className="w-[28%]"
+                    />
+                </div>
 
-            <DataTable
-                columns={columns}
-                data={events}
-                onRowClick={handleRowClick} // custom prop
-            />
+                {/* Table Wrapper */}
+                <div className="table-fixed w-full border border-gray-300 rounded-md">
+                    <DataTable
+                        columns={columns}
+                        data={modifiedEvents} // ✅ Limited events & added empty row
+                        onRowClick={handleRowClick}
+                    />
 
-            <Dialog open={dialogOpen} onOpenChange={setDialogOpen}>
-                <DialogContent className="max-w-xl w-full max-h-[80vh] flex flex-col overflow-hidden p-6">
-                    {/* Header */}
-                    <DialogHeader>
-                        <DialogTitle className="text-xl font-semibold">
-                            {selectedEvent?.title}
-                        </DialogTitle>
-                        <DialogDescription className="text-muted-foreground">
-                            {new Date(
-                                selectedEvent?.start_time
-                            ).toLocaleString()}
-                        </DialogDescription>
-                    </DialogHeader>
+                    <Dialog open={dialogOpen} onOpenChange={setDialogOpen}>
+                        <DialogContent className="max-w-xl w-full max-h-[80vh] flex flex-col overflow-hidden p-6">
+                            {/* Header */}
+                            <DialogHeader>
+                                <DialogTitle className="text-xl font-semibold">
+                                    {selectedEvent?.title}
+                                </DialogTitle>
+                                <DialogDescription className="text-muted-foreground">
+                                    {selectedEvent?.start_time
+                                        ? new Date(
+                                              selectedEvent.start_time
+                                          ).toLocaleString()
+                                        : ""}
+                                </DialogDescription>
+                            </DialogHeader>
 
-                    {/* Scrollable Content */}
-                    <div className="flex-1 overflow-y-auto mt-4 space-y-2 pr-1">
-                        <p className="whitespace-pre-wrap break-words">
-                            <strong>Location:</strong>{" "}
-                            {selectedEvent?.location || "TBA"}
-                        </p>
-                        <p className="whitespace-pre-wrap break-words">
-                            <strong>Description:</strong>{" "}
-                            {selectedEvent?.description ||
-                                "No details available."}
-                        </p>
-                    </div>
+                            {/* Scrollable Content */}
+                            <div className="flex-1 overflow-y-auto mt-4 space-y-2 pr-1">
+                                <p className="whitespace-pre-wrap break-words">
+                                    <strong>Location:</strong>{" "}
+                                    {selectedEvent?.location || "TBA"}
+                                </p>
+                                <p className="whitespace-pre-wrap break-words">
+                                    <strong>Description:</strong>{" "}
+                                    {selectedEvent?.description ||
+                                        "No details available."}
+                                </p>
+                            </div>
 
-                    {/* Sticky Footer Button */}
-                    <div className="pt-4">
-                        <Button
-                            className="w-full"
-                            onClick={() => {
-                                handleOpenEventPage(selectedEvent);
-                            }}
-                        >
-                            Open Event Page
-                        </Button>
-                    </div>
-                </DialogContent>
-            </Dialog>
+                            {/* Sticky Footer Button */}
+                            <div className="pt-4">
+                                <Button
+                                    className="w-full"
+                                    onClick={() =>
+                                        handleOpenEventPage(selectedEvent)
+                                    }
+                                >
+                                    Open Event Page
+                                </Button>
+                            </div>
+                        </DialogContent>
+                    </Dialog>
+                </div>
+            </div>
         </div>
     );
 }
