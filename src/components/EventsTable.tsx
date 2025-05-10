@@ -1,5 +1,5 @@
 "use client";
-
+import { X } from "lucide-react";
 import { useEffect, useState } from "react";
 import { ColumnDef } from "@tanstack/react-table";
 import { supabase } from "@/lib/supabaseClient";
@@ -76,12 +76,22 @@ export default function EventsTable() {
             <div className="w-[75%] p-4">
                 <div className="flex justify-between items-center mb-6">
                     <h1 className="text-2xl font-bold">Upcoming Events</h1>
-                    <Input
-                        placeholder="Search events..."
-                        value={searchTerm}
-                        onChange={(e) => setSearchTerm(e.target.value)}
-                        className="w-[28%]"
-                    />
+                    <div className="relative w-[28%]">
+                        <Input
+                            placeholder="Search events..."
+                            value={searchTerm}
+                            onChange={(e) => setSearchTerm(e.target.value)}
+                            className="w-full pr-10"
+                        />
+                        {searchTerm && (
+                            <button
+                                className="absolute right-3 top-1/2 transform -translate-y-1/2 text-gray-500 hover:text-gray-700"
+                                onClick={() => setSearchTerm("")}
+                            >
+                                <X className="w-5 h-5" />{" "}
+                            </button>
+                        )}
+                    </div>
                 </div>
 
                 {/* Table Wrapper */}
