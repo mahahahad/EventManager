@@ -61,14 +61,27 @@ export default function Navbar() {
     };
 
     return (
-        <nav className="fixed top-4 left-1/2 transform -translate-x-1/2 w-[85%] backdrop-blur-lg bg-black/30 shadow-md rounded-[48px] px-6 py-3 flex justify-between items-center text-white z-1">
-            <Link
-                href="/"
-                className="text-xl font-semibold hover:bg-black/40 p-2 rounded-[12px] transition"
-            >
-                Home
-            </Link>
-
+        <nav className="fixed top-4 left-1/2 transform -translate-x-1/2 w-[85%] backdrop-blur-lg bg-black/30 shadow-md rounded-[48px] px-4 py-2 flex justify-start items-center text-white z-1">
+            <div className="flex-grow-1">
+                <Link
+                    href="/"
+                    className="text-l font-semibold hover:bg-black/40 px-6 py-2 rounded-[12px] rounded-[24px] transition"
+                >
+                    Home
+                </Link>
+                <Link
+                    href="/dashboard"
+                    className="text-l font-semibold hover:bg-black/40 px-6 py-2 rounded-[12px] rounded-[24px] transition"
+                >
+                    Dashboard
+                </Link>
+                <Link
+                    href="/events"
+                    className="text-l font-semibold hover:bg-black/40 px-6 py-2 rounded-[12px] rounded-[24px] transition"
+                >
+                    Events
+                </Link>
+            </div>
             {user ? (
                 <DropdownMenu>
                     <DropdownMenuTrigger className="font-bold cursor-pointer hover:bg-black/40 p-2 rounded-[12px] transition">
