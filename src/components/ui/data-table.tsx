@@ -16,8 +16,10 @@ import {
 } from "@/components/ui/table";
 
 interface DataTableProps<TData> {
-    columns: ColumnDef<TData, any>[];
+    columns: ColumnDef<TData>[];
     data: TData[];
+    onRowClick?: (row: TData) => void;
+    className?: string; // ✅ Add this
 }
 
 export function DataTable<TData>({
@@ -54,7 +56,7 @@ export function DataTable<TData>({
                             <TableRow
                                 key={row.id}
                                 onClick={() => onRowClick?.(row.original)}
-                                className="cursor-pointer hover:bg-muted"
+                                className="cursor-pointer hover:bg-muted text-left"
                             >
                                 {row.getVisibleCells().map((cell) => (
                                     <TableCell key={cell.id}>
@@ -70,7 +72,7 @@ export function DataTable<TData>({
                         <TableRow>
                             <TableCell
                                 colSpan={columns.length}
-                                className="text-center"
+                                className="text-left"
                             >
                                 No events found.
                             </TableCell>

@@ -3,6 +3,10 @@
 
 @custom-variant dark (&:is(.dark *));
 
+body {
+    overflow-y: auto !important;
+}
+
 @theme inline {
     --color-background: var(--background);
     --color-foreground: var(--foreground);

@@ -1,40 +1,48 @@
-"use client"; // Add this directive for client-side rendering
+"use client";
 
 import { useEffect, useState } from "react";
-import { supabase } from "@/lib/supabaseClient"; // Supabase client
-import { Button } from "./ui/button"; // Button component
-import Link from "next/link"; // Link component
+import { supabase } from "@/lib/supabaseClient";
+import Link from "next/link";
+import { useRouter } from "next/navigation";
 import {
     DropdownMenu,
     DropdownMenuTrigger,
     DropdownMenuContent,
     DropdownMenuItem,
-} from "@/components/ui/dropdown-menu"; // ShadCN Dropdown components
+} from "@/components/ui/dropdown-menu";
 
 export default function Navbar() {
     const [user, setUser] = useState<any | null>(null);
+    const [isAdmin, setIsAdmin] = useState(false);
+    const router = useRouter();
 
-    // Fetch user data when the component mounts
     useEffect(() => {
         const fetchUser = async () => {
-            const { data, error } = await supabase.auth.getUser(); // Get user from Supabase
+            const { data, error } = await supabase.auth.getUser();
             if (error || !data.user) {
-                setUser(null); // If no user or error, clear user state
-            } else {
-                setUser(data.user); // If user is logged in, set user state
+                setUser(null);
+                return;
             }
+            setUser(data.user);
+
+            // ✅ Check if user is an admin
+            const { data: adminCheck } = await supabase
+                .from("users")
+                .select("is_admin")
+                .eq("email", data.user.email)
+                .single();
+
+            setIsAdmin(adminCheck?.is_admin || false);
         };
 
         fetchUser();
     }, []);
 
-    // Handle user logout
     const handleLogout = async () => {
-        await supabase.auth.signOut(); // Log out the user using Supabase
-        setUser(null); // Clear user state
+        await supabase.auth.signOut();
+        setUser(null);
     };
 
-    // Handle making the user an admin
     const handleMakeAdmin = async () => {
         if (!user) return;
 
@@ -47,36 +55,67 @@ export default function Navbar() {
             console.error("Failed to make user admin:", error.message);
             alert("Error promoting to admin.");
         } else {
+            setIsAdmin(true);
             alert("You are now an admin!");
-            // Optionally refetch user data here if needed
         }
     };
 
     return (
-        <nav className="flex justify-between p-4 shadow-md">
-            <Link href="/">Home</Link>
+        <nav className="fixed top-4 left-1/2 transform -translate-x-1/2 w-[85%] backdrop-blur-lg bg-black/30 shadow-md rounded-[48px] px-6 py-3 flex justify-between items-center text-white z-1">
+            <Link
+                href="/"
+                className="text-xl font-semibold hover:bg-black/40 p-2 rounded-[12px] transition"
+            >
+                Home
+            </Link>
+
             {user ? (
-                <div className="flex space-x-4 items-center">
-                    <DropdownMenu>
-                        <DropdownMenuTrigger>
-                            <span className="font-bold cursor-pointer">
-                                {user.user_metadata?.display_name || user.email}
-                            </span>
-                        </DropdownMenuTrigger>
-                        <DropdownMenuContent align="end">
-                            <DropdownMenuItem onClick={handleMakeAdmin}>
+                <DropdownMenu>
+                    <DropdownMenuTrigger className="font-bold cursor-pointer hover:bg-black/40 p-2 rounded-[12px] transition">
+                        {user.user_metadata?.display_name || user.email}
+                    </DropdownMenuTrigger>
+                    <DropdownMenuContent
+                        align="end"
+                        className="bg-black/30 backdrop-blur-md shadow-md rounded-[16px] p-3 space-y-2 z-50"
+                        forceMount
+                    >
+                        {isAdmin ? (
+                            <DropdownMenuItem
+                                onClick={() => router.push("/admin")}
+                                className="hover:bg-black/40 transition rounded-[12px] p-2"
+                            >
+                                Admin Dashboard
+                            </DropdownMenuItem>
+                        ) : (
+                            <DropdownMenuItem
+                                onClick={handleMakeAdmin}
+                                className="hover:bg-black/40 transition rounded-[12px] p-2"
+                            >
                                 Become Admin
                             </DropdownMenuItem>
-                            <DropdownMenuItem onClick={handleLogout}>
-                                Log Out
-                            </DropdownMenuItem>
-                        </DropdownMenuContent>
-                    </DropdownMenu>
-                </div>
+                        )}
+                        <DropdownMenuItem
+                            onClick={handleLogout}
+                            className="hover:bg-black/40 transition rounded-[12px] p-2"
+                        >
+                            Log Out
+                        </DropdownMenuItem>
+                    </DropdownMenuContent>
+                </DropdownMenu>
             ) : (
                 <div className="flex space-x-4">
-                    <Link href="/login">Log In</Link>
-                    <Link href="/signup">Sign Up</Link>
+                    <Link
+                        href="/login"
+                        className="hover:bg-black/40 p-2 rounded-[12px] transition"
+                    >
+                        Log In
+                    </Link>
+                    <Link
+                        href="/signup"
+                        className="hover:bg-black/40 p-2 rounded-[12px] transition"
+                    >
+                        Sign Up
+                    </Link>
                 </div>
             )}
         </nav>
