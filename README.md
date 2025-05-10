@@ -1,36 +1,63 @@
-This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
+# 🎉 Event Manager for 42 Community
 
-## Getting Started
+Welcome to **Event Manager**, a sleek and modern web app designed for the 42 community to discover, subscribe, and manage events effortlessly. Built using **Next.js & Supabase**, it features **real-time sync, admin controls, dynamic UI enhancements, and intuitive navigation**.
 
-First, run the development server:
+## 🚀 Implemented Features
 
-```bash
-npm run dev
-# or
-yarn dev
-# or
-pnpm dev
-# or
-bun dev
-```
+### ✅ **Easy Features**
 
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
+-   🎨 **Intuitive UI** – Clean, consistent, and fully responsive.
+-   📅 **Events List** – Displays at least **3 upcoming events** with title & date.
+-   📝 **Event Details** – Shows full event description.
+-   📱 **Responsive Design** – Works flawlessly across screen sizes with **no console errors**.
 
-You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
+### ⚡ **Intermediate Features**
 
-This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
+-   🔒 **Protected Admin Page** – `/admin` is **blocked for logged-out users**.
+-   ➕ **Create Events** – Admins can **add events live**, appearing instantly.
+-   ✏️ **Edit Events** – Updates **reflect dynamically** without refresh.
+-   ❌ **Delete Events** – Events **stay deleted** after page reload.
+-   🔍 **Live Search & Filter** – Events list **updates instantly** as users type.
 
-## Learn More
+### 🔥 **Hard Features**
 
-To learn more about Next.js, take a look at the following resources:
+-   🔄 **Real-time Sync Between Tabs** – Changes are **instantly reflected across open tabs**.
+-   📂 **Supabase Subscriptions** – Ensures smooth **event updates without manual refresh**.
 
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
+### 🎖️ **Bonus**
 
-You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
+-   🔗 **Public GitHub Repo with README**
+-   🌎 **Live Deployment** – Hosted version linked below in project description.
+-   ✨ **UI Enhancements** – Custom **rounded styling**, **glassmorphism navbar**, & refined **spacing**.
 
-## Deploy on Vercel
+## 🛠️ Tech Stack
 
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
+-   **Frontend:** Next.js, Tailwind CSS
+-   **Backend:** Supabase (Auth, Database, Realtime)
+-   **Tools:** TypeScript, React Table, Shadcn UI
 
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
+## 🚀 Deployment & Setup
+
+### **💻 Local Setup**
+
+1. Clone the repository:
+    ```sh
+    git clone https://github.com/your-username/event-manager.git
+    ```
+2. Install dependencies:
+    ```sh
+    npm install
+    ```
+3. Create `.env.local` file containing your following keys:
+    ```sh
+     NEXT_PUBLIC_SUPABASE_URL=<your_supabase_url>
+     NEXT_PUBLIC_SUPABASE_ANON_KEY=<your_anon_key>
+    ```
+4. Run the app
+    ```sh
+    npm run dev
+    ```
+5. Suffer like a true programmer.
+    ```sh
+    kill -9 $YOUR_NAME
+    ```
