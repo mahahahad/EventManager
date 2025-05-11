@@ -6,6 +6,8 @@ import { Event as EventData } from "@/types/event";
 import Link from "next/link";
 import Navbar from "@/components/Navbar";
 import EventsTable from "@/components/EventsTable"; // Import your EventsTable component
+import EventTableSkeleton from "@/components/EventTableSkeleton"; // Import the skeleton component
+import FullScreenBackground from "@/components/FullScreenBackground"; // Import the background component
 import { X } from "lucide-react";
 
 export default function EventsPage() {
@@ -50,25 +52,13 @@ export default function EventsPage() {
         setSearchQuery("");
     };
 
-    if (loading) {
-        return <div className="text-white">Loading events...</div>;
-    }
-
-    if (error) {
-        return <div className="text-red-500">Error: {error}</div>;
-    }
-
     return (
-        <div className="relative min-h-screen text-white pt-28 pb-12 px-4 sm:px-6 lg:px-8 bg-black overflow-hidden">
-            {/* Background Visuals and Gradient */}
-            <div
-                className="absolute inset-0 bg-cover bg-center bg-no-repeat opacity-20 sm:opacity-30"
-                style={{
-                    backgroundImage:
-                        "url('https://images.unsplash.com/photo-1635776062127-d379bfcba9f8?q=80&w=1932&auto=format&fit=crop&ixlib=rb-4.1.0&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D')",
-                }}
-            ></div>
-            <div className="absolute inset-0 bg-gradient-to-b from-black/50 via-black/70 to-black"></div>
+        <div className="relative min-h-screen text-white pt-28 pb-12 px-4 sm:px-6 lg:px-8 overflow-hidden">
+            <FullScreenBackground
+                imageUrl="https://images.unsplash.com/photo-1635776062127-d379bfcba9f8?q=80&w=1932&auto=format&fit=crop&ixlib=rb-4.1.0&ixid=M3wxMjA3fDB8MHxwaG0dby1wYWdlfHx8fGVufDB8fHx8fA%3D%3D"
+                darkOverlay={true}
+                animatedGradient={false} // You can enable this if you like on this page
+            />
 
             <Navbar />
             <div className="relative z-10 p-6 space-y-6 max-w-full">
@@ -94,7 +84,13 @@ export default function EventsPage() {
                         )}
                     </div>
                 </div>
-                <EventsTable events={filteredEvents} />{" "}
+                {loading ? (
+                    <EventTableSkeleton />
+                ) : error ? (
+                    <div className="text-red-500">Error: {error}</div>
+                ) : (
+                    <EventsTable events={filteredEvents} />
+                )}
                 {/* Use your EventsTable here */}
             </div>
         </div>

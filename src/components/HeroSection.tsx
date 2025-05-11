@@ -63,7 +63,7 @@ export default function HeroSection() {
                 </p>
                 <Button
                     onClick={handleRedirect}
-                    className="mt-6 sm:mt-8 px-8 py-3 sm:px-10 sm:py-4 text-base sm:text-lg font-semibold
+                    className="mt-6 sm:mt-8 !px-8 !py-8 sm:px-10 sm:py-4 text-base sm:text-lg font-semibold
                                     bg-blue-600 hover:bg-blue-500 text-white
                                     rounded-xl shadow-lg hover:shadow-blue-500/50 transition-all duration-300 ease-in-out
                                     transform hover:scale-105 flex items-center gap-2 group"
@@ -76,7 +76,11 @@ export default function HeroSection() {
             {/* Events Table Section with Skeleton Loading */}
             <div className="relative z-10 mt-16 w-full flex justify-center">
                 <div className="max-w-screen-lg w-[90%] md:w-[80%] lg:w-[70%]">
-                    {loading ? <EventTableSkeleton /> : <EventsTable events={upcomingEvents} />}
+                    {loading ? (
+                        <EventTableSkeleton />
+                    ) : (
+                        <EventsTable events={upcomingEvents} />
+                    )}
                 </div>
             </div>
         </section>
