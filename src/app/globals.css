@@ -141,3 +141,17 @@ body {
     background-size: 300% 300%;
     animation: gradient-move 10s ease-in-out infinite; /* Adjust duration as needed */
 }
+.custom-scrollbar-thin::-webkit-scrollbar {
+    width: 6px;
+    height: 6px;
+}
+.custom-scrollbar-thin::-webkit-scrollbar-track {
+    background: transparent; /* Or a very dark, subtle color */
+}
+.custom-scrollbar-thin::-webkit-scrollbar-thumb {
+    background: rgba(107, 114, 128, 0.5); /* gray-500 with opacity */
+    border-radius: 3px;
+}
+.custom-scrollbar-thin::-webkit-scrollbar-thumb:hover {
+    background: rgba(75, 85, 99, 0.7); /* gray-600 with opacity */
+}

@@ -31,9 +31,13 @@ Welcome to **Event Manager**, a sleek and modern web app designed for the 42 com
 
 ### 🎖️ **Bonus**
 
--   🔗 **Public GitHub Repo with README**
--   🌎 **Live Deployment** – Hosted version linked below in project description.
--   ✨ **UI Enhancements** – Custom **rounded styling**, **glassmorphism navbar**, & refined **spacing**.
+-   **Public GitHub Repo with README**
+-   **Live Deployment** – Hosted version linked below in project description.
+-   **Event recommendation logc**
+-   **Event registering through website**
+-   **Event rating to improve recommendations**
+-   **Skeleton Loading**
+-   **Partial 42 Integration** - Partially uses the 42 API for things like fetching events on the Abu Dhabi campus (currently only manual through /api/sync-events)
 
 ## 🛠️ Tech Stack
 

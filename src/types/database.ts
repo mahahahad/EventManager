@@ -1,27 +1,27 @@
 // In a types file, e.g., src/types/index.ts or src/types/database.ts
 
 export interface UserProfile {
-    // From your 'users' table
+    // ... (rest of UserProfile)
     id: string; // UUID
     display_name: string | null;
-    email: string;
+    email: string; // Assuming email is present
     is_admin: boolean;
     created_at?: string; // ISO date string
     updated_at?: string; // ISO date string
 }
 
 export interface Tag {
+    // ... (rest of Tag)
     id: string; // UUID
     name: string;
     created_at?: string; // ISO date string
 }
 
-// Interface for the raw data fetched from event_tags join including the nested tag
 export interface EventTagLinkRaw {
+    // ... (rest of EventTagLinkRaw)
     event_id: string; // UUID
     tag_id: string; // UUID
-    tags: Tag; // The nested Tag object when joining
-    // assigned_at?: string;
+    tags: Tag; 
 }
 
 export interface Event {
@@ -31,53 +31,49 @@ export interface Event {
     start_time: string; // ISO date string
     end_time: string | null; // ISO date string
     location: string | null;
+    image_url: string | null;   // <<< ADDED THIS LINE (make it optional if it can be null in DB)
     external_id: string | null;
     source: string | null;
+    is_public: boolean;         // <<< ADDED THIS LINE (type should match your DB column)
     created_by: string | null; // UUID of user
     created_at?: string; // ISO date string
     updated_at?: string; // ISO date string
 
-    // For related data after processing Supabase joins:
+    // For related data after processing Supabase joins (as used on Dashboard):
     tags?: string[]; // Array of tag names, processed from event_tags
-    // Or, if you prefer to keep the full tag objects:
-    // event_tags?: Tag[]; // Processed array of Tag objects
 }
 
 export interface EventRegistration {
-    id: string; // UUID (specific to the registration itself)
-    user_id: string; // UUID
-    event_id: string; // UUID
-    registration_time: string; // ISO date string
+    // ... (rest of EventRegistration)
+    id: string; 
+    user_id: string; 
+    event_id: string; 
+    registration_time: string; 
     attended: boolean | null;
-
-    // Optional: Include the full event object if you fetch it with a join
     event?: Event;
 }
 
 export interface UserEventRating {
-    id: string; // UUID (specific to the rating itself)
-    user_id: string; // UUID
-    event_id: string; // UUID
-    rating: number; // 1-5
-    comment: string | undefined;
-    rated_at: string; // ISO date string
-
-    // Optional: Include the full event object
+    // ... (rest of UserEventRating)
+    id: string; 
+    user_id: string; 
+    event_id: string; 
+    rating: number; 
+    comment: string | undefined; // Consider string | null if your DB stores NULL for empty comments
+    rated_at: string; 
     event?: Event;
 }
 
 // For your DashboardPage component states:
 export interface RegisteredEvent extends Event {
-    // Event with registration details
     registration_time: string;
     attended?: boolean | null;
-    user_rating?: number | null; // Added from user_event_ratings
+    user_rating?: number | null;
 }
 
 export interface PastEvent extends Event {
-    // Event that has passed, for rating
     attended?: boolean | null;
-    user_rating?: number | null; // User's current rating for this event
+    user_rating?: number | null;
 }
 
 // For recommendations (if you add a score)
