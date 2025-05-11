@@ -6,7 +6,7 @@ import EventsTable from "@/components/EventsTable";
 import { ArrowRight } from "lucide-react"; // For an icon in the button
 import { useEffect, useState } from "react";
 import { supabase } from "@/lib/supabaseClient";
-import { Event as EventData } from "@/types/event";
+import { Event as EventData } from "@/types/database";
 import FullScreenBackground from "@/components/FullScreenBackground"; // Import the background component
 import EventTableSkeleton from "@/components/EventTableSkeleton"; // Import the skeleton component
 
