@@ -1,50 +1,34 @@
 "use client";
 
-import { useEffect, useState } from "react";
-import { useRouter } from "next/navigation";
-import { supabase } from "@/lib/supabaseClient";
-import AdminDashboard from "@/components/AdminDashboard";
+import React from "react";
+import Link from "next/link";
+import AdminNavbar from "@/components/AdminNavbar"; // Import the navbar
 
-export default function AdminPage() {
-    const [isAdmin, setIsAdmin] = useState(false);
-    const [checked, setChecked] = useState(false);
-    const router = useRouter();
-
-    useEffect(() => {
-        const checkAdmin = async () => {
-            const { data: authData, error: authError } =
-                await supabase.auth.getUser();
-
-            if (authError || !authData.user) {
-                router.replace("/");
-                return;
-            }
-
-            const email = authData.user.email;
-
-            const { data: usersData, error: usersError } = await supabase
-                .from("users")
-                .select("is_admin")
-                .eq("email", email)
-                .single();
-
-            if (usersError || !usersData?.is_admin) {
-                router.replace("/");
-                return;
-            }
-
-            setIsAdmin(true);
-            setChecked(true);
-        };
-
-        checkAdmin();
-    }, [router]);
-
-    if (!isAdmin || !checked) return null;
-
+const AdminDashboardPage = () => {
     return (
-        <div className="p-4">
-            <AdminDashboard />
+        <div className="bg-neutral-800 min-h-screen">
+            <AdminNavbar /> {/* Include the navbar */}
+            <div className="p-6 space-y-4 text-white">
+                <h1 className="text-3xl font-bold mb-6">Admin Dashboard</h1>
+
+                <p className="text-lg">Welcome to the admin dashboard!</p>
+
+                <div className="mt-4">
+                    <h2 className="text-xl font-semibold mb-2">
+                        Manage Events
+                    </h2>
+                    <Link
+                        href="/admin/events"
+                        className="inline-block bg-blue-500 hover:bg-blue-700 text-white font-bold py-2 px-4 rounded focus:outline-none focus:shadow-outline"
+                    >
+                        Go to Events Management
+                    </Link>
+                </div>
+
+                {/* You can add more sections here for other admin tasks */}
+            </div>
         </div>
     );
-}
+};
+
+export default AdminDashboardPage;
