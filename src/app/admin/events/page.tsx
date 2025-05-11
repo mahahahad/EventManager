@@ -1,6 +1,7 @@
+// src/app/admin/events/page.tsx
 "use client";
 
-import React, { useEffect, useState } from "react";
+import React, { useEffect, useState, useMemo } from "react"; // Ensured useMemo is imported
 import { supabase } from "@/lib/supabaseClient";
 import Link from "next/link";
 import AdminNavbar from "@/components/AdminNavbar";
@@ -13,303 +14,221 @@ import {
     TableHeader,
     TableRow,
 } from "@/components/ui/table";
-import {
-    Card,
-    CardContent,
-    CardDescription,
-    CardHeader,
-    CardTitle,
-} from "@/components/ui/card";
 import { Checkbox } from "@/components/ui/checkbox";
 import { cn } from "@/lib/utils";
-import { IoCloudUploadOutline, IoTrash, IoLink } from "react-icons/io5";
+import FullScreenBackground from "@/components/FullScreenBackground";
+import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
+import { Event as EventData } from "@/types/database";
 import {
-    Dialog,
-    DialogContent,
-    DialogDescription as DialogDescriptionUI,
-    DialogFooter,
-    DialogHeader as DialogHeaderUI,
-    DialogTitle as DialogTitleUI,
-} from "@/components/ui/dialog";
-import { motion, AnimatePresence, useMotionValue, useSpring } from "framer-motion";
-import FullScreenBackground from "@/components/FullScreenBackground"
-import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert"
+    PlusCircle,
+    UploadCloud,
+    Trash2,
+    Edit3,
+    Search,
+    X,
+    XCircle,
+    Loader2,
+    ArrowUpDown,
+} from "lucide-react";
 
-interface Event {
-    id: string;
-    title: string;
-    start_time: string;
-    location?: string;
-    description?: string;
-    external_id?: string;
-    source?: string;
-    // Add other relevant event properties
+interface ColumnHeaderProps {
+    sortKey: keyof EventData | "actions" | "select";
+    currentSort?: {
+        key: keyof EventData;
+        direction: "ascending" | "descending";
+    } | null;
+    requestSort?: (key: keyof EventData) => void;
+    children: React.ReactNode;
+    className?: string;
+    isActionOrSelect?: boolean;
 }
 
-interface EventsTableProps {
-    events: Event[] | null;
-}
-
-const EventsTable: React.FC<EventsTableProps> = ({ events }) => {
-    const [selectedEvent, setSelectedEvent] = useState<Event | null>(null);
-    const [dialogOpen, setDialogOpen] = useState(false);
-    const [hoveredEvent, setHoveredEvent] = useState<Event | null>(null);
-
-    const mouseX = useMotionValue(0);
-    const mouseY = useMotionValue(0);
-
-    const smoothX = useSpring(mouseX, { stiffness: 300, damping: 30 });
-    const smoothY = useSpring(mouseY, { stiffness: 300, damping: 30 });
-
-    useEffect(() => {
-        const handleMouseMove = (e: MouseEvent) => {
-            mouseX.set(e.clientX + 10);
-            mouseY.set(e.clientY + 10);
-        };
-        window.addEventListener("mousemove", handleMouseMove);
-        return () => window.removeEventListener("mousemove", handleMouseMove);
-    }, [mouseX, mouseY]);
-
-    const handleRowClick = (event: Event) => {
-        setSelectedEvent(event);
-        setDialogOpen(true);
-    };
-
-    if (!events) {
-        return (
-            <div className="w-full backdrop-blur-xl bg-black/40 shadow-2xl shadow-blue-500/10 rounded-xl p-4 sm:p-6 space-y-6 border border-gray-700/50 relative">
-                <div className="text-center text-gray-400 py-10">
-                    Loading events...
-                </div>
-            </div>
-        );
-    }
-
-    if (events.length === 0) {
-        return (
-            <div className="w-full backdrop-blur-xl bg-black/40 shadow-2xl shadow-blue-500/10 rounded-xl p-4 sm:p-6 space-y-6 border border-gray-700/50 relative">
-                <div className="text-center text-gray-400 py-10">
-                    No upcoming events available at the moment.
-                </div>
-            </div>
-        );
-    }
+const AdminColumnHeader: React.FC<ColumnHeaderProps> = ({
+    sortKey,
+    currentSort,
+    requestSort,
+    children,
+    className,
+    isActionOrSelect,
+}) => {
+    const isActive = !isActionOrSelect && currentSort?.key === sortKey;
+    const directionIcon = isActive
+        ? currentSort?.direction === "ascending"
+            ? "↑"
+            : "↓"
+        : null;
+    const canSort = !isActionOrSelect && requestSort;
 
     return (
-        <div className="w-full overflow-x-auto">
-            <div className="max-w-full backdrop-blur-xl bg-black/40 shadow-2xl shadow-blue-500/10 rounded-xl p-4 sm:p-6 space-y-6 border border-gray-700/50 relative">
-                <table className="w-full table-auto text-left">
-                    <thead className="border-b border-gray-700">
-                        <tr>
-                            <th className="py-2 px-4 text-left text-gray-400 font-semibold w-32 overflow-hidden text-ellipsis">
-                                Title
-                            </th>
-                            <th className="py-2 px-4 text-left text-gray-400 font-semibold w-40 overflow-hidden text-ellipsis">
-                                Start Time
-                            </th>
-                            <th className="py-2 px-4 text-left text-gray-400 font-semibold w-24 overflow-hidden text-ellipsis">
-                                Location
-                            </th>
-                        </tr>
-                    </thead>
-                    <tbody>
-                        {events.map((event) => (
-                            <motion.tr
-                                key={event.id}
-                                className="hover:bg-gray-800/50 transition cursor-pointer"
-                                onClick={() => handleRowClick(event)}
-                                onMouseEnter={() => setHoveredEvent(event)}
-                                onMouseLeave={() => setHoveredEvent(null)}
-                            >
-                                <td className="py-2 px-4 w-32 overflow-hidden text-ellipsis whitespace-nowrap text-gray-300">
-                                    {event.title}
-                                </td>
-                                <td className="py-2 px-4 w-40 overflow-hidden text-ellipsis whitespace-nowrap text-gray-300">
-                                    {new Date(event.start_time).toLocaleString(
-                                        undefined,
-                                        {
-                                            dateStyle: "medium",
-                                            timeStyle: "short",
-                                        }
-                                    )}
-                                </td>
-                                <td className="py-2 px-4 w-24 overflow-hidden text-ellipsis whitespace-nowrap text-gray-300">
-                                    {event.location}
-                                </td>
-                            </motion.tr>
-                        ))}
-                    </tbody>
-                </table>
-
-                <Dialog open={dialogOpen} onOpenChange={setDialogOpen}>
-                    <DialogContent className="bg-gray-900/80 backdrop-blur-lg border-gray-700 text-white rounded-xl shadow-xl max-w-lg w-full p-0">
-                        {selectedEvent && (
-                            <>
-                                <DialogHeaderUI className="p-6 border-b border-gray-700/50">
-                                    <DialogTitleUI className="text-2xl font-semibold text-blue-400">
-                                        {selectedEvent.title}
-                                    </DialogTitleUI>
-                                    <DialogDescriptionUI className="text-gray-400 pt-1">
-                                        {new Date(
-                                            selectedEvent.start_time
-                                        ).toLocaleString(undefined, {
-                                            weekday: "long",
-                                            year: "numeric",
-                                            month: "long",
-                                            day: "numeric",
-                                            hour: "2-digit",
-                                            minute: "2-digit",
-                                        })}
-                                    </DialogDescriptionUI>
-                                </DialogHeaderUI>
-                                <div className="p-6 space-y-4 max-h-[60vh] overflow-y-auto">
-                                    <p>
-                                        <strong className="text-gray-300">
-                                            Location:
-                                        </strong>
-                                        {selectedEvent.location || "TBA"}
-                                    </p>
-                                    <p className="whitespace-pre-wrap">
-                                        <strong className="text-gray-300">
-                                            Description:
-                                        </strong>
-                                        {selectedEvent.description ||
-                                            "No details available."}
-                                    </p>
-                                    {selectedEvent.external_id &&
-                                        selectedEvent.source ===
-                                        "intra_42" && (
-                                            <div className="mt-4">
-                                                <strong className="text-gray-300">
-                                                    Intra 42 Link:
-                                                </strong>
-                                                <a
-                                                    href={`https://intra.42.fr/events/${selectedEvent.external_id}`}
-                                                    target="_blank"
-                                                    rel="noopener noreferrer"
-                                                    className="text-blue-400 hover:text-blue-300 transition-colors flex items-center gap-1.5"
-                                                >
-                                                    Open on Intra <IoLink size={16} />
-                                                </a>
-                                            </div>
-                                        )}
-                                </div>
-                                <DialogFooter className="p-6 border-t border-gray-700/50 flex flex-col sm:flex-row sm:justify-end gap-2">
-                                    <Button
-                                        variant="outline"
-                                        onClick={() => setDialogOpen(false)}
-                                        className="border-gray-600 hover:bg-gray-700/50"
-                                    >
-                                        Close
-                                    </Button>
-                                </DialogFooter>
-                            </>
-                        )}
-                    </DialogContent>
-                </Dialog>
-            </div>
-            <AnimatePresence>
-                {hoveredEvent && hoveredEvent.description && (
-                    <motion.div
-                        key={hoveredEvent.id}
-                        initial={{ opacity: 0, scale: 0.95 }}
-                        animate={{ opacity: 1, scale: 1 }}
-                        exit={{ opacity: 0, scale: 0.95 }}
-                        transition={{
-                            type: "spring",
-                            stiffness: 250,
-                            damping: 20,
-                        }}
-                        style={{
-                            position: "fixed",
-                            top: 0,
-                            left: 0,
-                            translateX: smoothX,
-                            translateY: smoothY,
-                            backgroundColor: "rgba(0, 0, 0, 0.85)",
-                            color: "white",
-                            padding: "0.5rem",
-                            borderRadius: "0.3rem",
-                            zIndex: 1000,
-                            pointerEvents: "none",
-                            maxWidth: "300px",
-                            fontSize: "0.8rem",
-                            lineHeight: "1.4",
-                            boxShadow:
-                                "0px 4px 6px rgba(0, 0, 0, 0.1), 0px 5px 15px rgba(0, 0, 0, 0.1)", // Add a subtle shadow
-                        }}
+        <TableHead
+            className={cn(
+                "font-medium text-gray-400 group transition-colors",
+                canSort ? "hover:text-gray-100 cursor-pointer" : "",
+                className
+            )}
+            onClick={
+                canSort
+                    ? () => requestSort(sortKey as keyof EventData)
+                    : undefined
+            }
+            title={
+                canSort
+                    ? `Sort by ${
+                          typeof children === "string"
+                              ? children
+                              : String(sortKey)
+                      }`
+                    : undefined
+            }
+        >
+            <div className="flex items-center gap-1.5">
+                {children}
+                {canSort && (
+                    <span
+                        className={`transition-opacity text-xs ${
+                            isActive
+                                ? "opacity-100 text-blue-400"
+                                : "opacity-0 group-hover:opacity-60"
+                        }`}
                     >
-                        {hoveredEvent.description}
-                    </motion.div>
+                        {directionIcon || <ArrowUpDown size={12} />}
+                    </span>
                 )}
-            </AnimatePresence>
-        </div>
+            </div>
+        </TableHead>
     );
 };
 
-const AdminEventsPage = () => {
-    const [events, setEvents] = useState<Event[] | null>(null);
+export default function AdminEventsPage() {
+    const [events, setEvents] = useState<EventData[]>([]);
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState<string | null>(null);
     const [selectedEvents, setSelectedEvents] = useState<string[]>([]);
     const [isBulkDeleting, setIsBulkDeleting] = useState(false);
-    const [selectAllChecked, setSelectAllChecked] = useState(false); // New state for select all
-
-    useEffect(() => {
-        fetchEvents();
-    }, []);
+    const [searchQuery, setSearchQuery] = useState("");
+    // filteredEvents state can be removed if sortedFilteredEvents is used for everything
+    // const [filteredEvents, setFilteredEvents] = useState<EventData[]>([]);
+    const [sortConfig, setSortConfig] = useState<{
+        key: keyof EventData;
+        direction: "ascending" | "descending";
+    } | null>({ key: "start_time", direction: "descending" });
 
     const fetchEvents = async () => {
-        setLoading(true);
         setError(null);
-
-        const { data, error } = await supabase
+        const { data, error: fetchError } = await supabase
             .from("events")
             .select("*")
             .order("start_time", { ascending: true });
-
-        if (error) {
-            console.error("Error fetching events:", error);
+        if (fetchError) {
             setError("Failed to fetch events.");
-        } else if (data) {
-            setEvents(data);
-        }
-
-        setLoading(false);
-    };
-
-    const handleCheckboxChange = (eventId: string, isChecked: boolean) => {
-        if (isChecked) {
-            setSelectedEvents([...selectedEvents, eventId]);
+            setEvents([]);
         } else {
-            setSelectedEvents(selectedEvents.filter((id) => id !== eventId));
-        }
-    };
-
-    const handleSelectAll = (isChecked: boolean) => {
-        if (events) {
-            const eventIds = events.map((event) => event.id);
-            setSelectedEvents(isChecked ? eventIds : []);
-            setSelectAllChecked(isChecked); // Update the state
+            setEvents(data || []);
         }
     };
 
     useEffect(() => {
-        // Update "select all" checkbox based on selected events
-        if (events) {
-            setSelectAllChecked(
-                selectedEvents.length > 0 &&
-                    selectedEvents.length === events.length
+        setLoading(true);
+        fetchEvents().finally(() => setLoading(false));
+    }, []);
+
+    const sortedFilteredEvents = useMemo(() => {
+        let itemsToProcess: EventData[] = [...events];
+        if (searchQuery) {
+            const lowercasedQuery = searchQuery.toLowerCase();
+            itemsToProcess = itemsToProcess.filter(
+                (
+                    event: EventData // Typed event
+                ) =>
+                    event.title?.toLowerCase().includes(lowercasedQuery) ||
+                    event.location?.toLowerCase().includes(lowercasedQuery) ||
+                    event.description
+                        ?.toLowerCase()
+                        .includes(lowercasedQuery) ||
+                    String(event.id).toLowerCase().includes(lowercasedQuery)
             );
         }
-    }, [selectedEvents, events]);
+
+        if (sortConfig !== null) {
+            itemsToProcess.sort((a: EventData, b: EventData) => {
+                // Typed a and b
+                const valA_orig = a[sortConfig.key];
+                const valB_orig = b[sortConfig.key];
+                if (
+                    sortConfig.key === "start_time" ||
+                    sortConfig.key === "end_time"
+                ) {
+                    const dateA = valA_orig
+                        ? new Date(valA_orig as string).getTime()
+                        : 0;
+                    const dateB = valB_orig
+                        ? new Date(valB_orig as string).getTime()
+                        : 0;
+                    if (dateA < dateB)
+                        return sortConfig.direction === "ascending" ? -1 : 1;
+                    if (dateA > dateB)
+                        return sortConfig.direction === "ascending" ? 1 : -1;
+                    return 0;
+                }
+                let valA_str = String(valA_orig ?? "").toLowerCase();
+                let valB_str = String(valB_orig ?? "").toLowerCase();
+                if (valA_str < valB_str)
+                    return sortConfig.direction === "ascending" ? -1 : 1;
+                if (valA_str > valB_str)
+                    return sortConfig.direction === "ascending" ? 1 : -1;
+                return 0;
+            });
+        }
+        return itemsToProcess;
+    }, [searchQuery, events, sortConfig]);
+
+    // Reset selected events when the list of displayed events changes
+    useEffect(() => {
+        setSelectedEvents([]);
+    }, [sortedFilteredEvents]);
+
+    const requestSortAdmin = (key: keyof EventData) => {
+        let direction: "ascending" | "descending" = "descending";
+        if (
+            sortConfig &&
+            sortConfig.key === key &&
+            sortConfig.direction === "descending"
+        ) {
+            direction = "ascending";
+        } else if (
+            sortConfig &&
+            sortConfig.key === key &&
+            sortConfig.direction === "ascending"
+        ) {
+            direction = "descending";
+        }
+        setSortConfig({ key, direction });
+    };
+
+    const handleCheckboxChange = (eventId: string, isChecked: boolean) => {
+        setSelectedEvents((prevSelected) =>
+            isChecked
+                ? [...prevSelected, eventId]
+                : prevSelected.filter((id) => id !== eventId)
+        );
+    };
+
+    const handleSelectAll = (isChecked: boolean) => {
+        setSelectedEvents(
+            isChecked ? sortedFilteredEvents.map((event) => event.id) : []
+        );
+    };
+
+    const isAllFilteredSelected =
+        sortedFilteredEvents.length > 0 &&
+        selectedEvents.length === sortedFilteredEvents.length;
 
     const handleBulkDelete = async () => {
+        /* ... (same) ... */
         if (selectedEvents.length === 0) {
             alert("Please select events to delete.");
             return;
         }
-
         if (
             confirm(
                 `Are you sure you want to delete ${selectedEvents.length} selected events?`
@@ -317,185 +236,194 @@ const AdminEventsPage = () => {
         ) {
             setIsBulkDeleting(true);
             setError(null);
-
             const { error: deleteError } = await supabase
                 .from("events")
                 .delete()
                 .in("id", selectedEvents);
-
             if (deleteError) {
-                console.error("Error deleting events:", deleteError);
                 setError("Failed to delete selected events.");
                 alert("Failed to delete selected events.");
             } else {
-                console.log(
-                    `Successfully deleted ${selectedEvents.length} events.`
-                );
                 setSelectedEvents([]);
-                fetchEvents();
+                await fetchEvents();
                 alert("Selected events deleted successfully!");
             }
             setIsBulkDeleting(false);
         }
     };
-
-    const handleDeleteEvent = async (id: string) => {
-        if (confirm("Are you sure you want to delete this event?")) {
-            const { error } = await supabase
+    const handleDeleteEvent = async (id: string, title: string) => {
+        /* ... (same) ... */
+        if (confirm(`Are you sure you want to delete the event "${title}"?`)) {
+            const { error: deleteError } = await supabase
                 .from("events")
                 .delete()
                 .eq("id", id);
-            if (error) {
-                console.error("Error deleting event:", error);
-                alert("Failed to delete event.");
+            if (deleteError) {
+                alert(`Failed to delete event: ${deleteError.message}`);
             } else {
-                setEvents(
-                    events ? events.filter((event) => event.id !== id) : []
-                );
+                await fetchEvents();
                 alert("Event deleted successfully!");
             }
         }
     };
-
-    if (loading) {
-        return (
-            <div className="flex justify-center items-center h-screen text-white">
-                Loading events...
-            </div>
-        );
-    }
-
-    if (error) {
-        return (
-            <div className="flex justify-center items-center h-screen">
-                <Alert variant="destructive">
-                    <AlertTitle>Error</AlertTitle>
-                    <AlertDescription>{error}</AlertDescription>
-                </Alert>
-            </div>
-        );
-    }
-
-    const backgroundImage =
-        "https://images.unsplash.com/photo-1499363536502-876489112b1c?q=80&w=3270&auto=format&fit=crop&ixlib=rb-4.0.3&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D"; // Replace with your actual image URL
+    const clearSearch = () => setSearchQuery("");
 
     return (
-        <div className="relative z-10">
-            <FullScreenBackground
-                imageUrl={backgroundImage}
-                animatedGradient={true}
-                blur={true}
-                darkOverlay={true}
-            />
-            <div className="pt-20 relative z-10">
-                <AdminNavbar />
-                <div className="max-w-4xl mx-auto space-y-6">
-                    <h1 className="text-3xl font-bold text-transparent bg-clip-text bg-gradient-to-r from-blue-400 to-purple-400">
-                        Manage Events
-                    </h1>
-                    <div className="flex flex-col sm:flex-row gap-4">
-                        <Link href="/admin/events/create">
-                            <Button
-                                variant="outline"
-                                className={cn(
-                                    "bg-green-500/20 text-white border-green-500/30",
-                                    "hover:bg-green-500/30 hover:border-green-500/50",
-                                    "transition-all duration-300 shadow-lg hover:shadow-green-500/20"
-                                )}
-                            >
-                                Create New Event
-                            </Button>
-                        </Link>
-                        <Link href="/admin/import">
-                            <Button
-                                variant="outline"
-                                className={cn(
-                                    "bg-blue-500/20 text-white border-blue-500/30",
-                                    "hover:bg-blue-500/30 hover:border-blue-500/50",
-                                    "transition-all duration-300 shadow-lg hover:shadow-blue-500/20"
-                                )}
-                            >
-                                <IoCloudUploadOutline className="mr-2 h-4 w-4" />
-                                Import Events
-                            </Button>
-                        </Link>
+        <div className="relative min-h-screen text-white">
+            <FullScreenBackground />
+            <AdminNavbar />
+            <main className="relative z-10 max-w-7xl mx-auto py-8 px-4 sm:px-6 lg:px-8 mt-20 sm:mt-24">
+                <div className="bg-black/60 backdrop-blur-xl shadow-2xl rounded-3xl p-6 sm:p-8 border border-gray-700/50 space-y-8">
+                    <div className="flex flex-col md:flex-row justify-between md:items-center gap-4 md:gap-6">
+                        <h1 className="text-3xl sm:text-4xl font-bold tracking-tight text-transparent bg-clip-text bg-gradient-to-r from-gray-200 via-white to-gray-400">
+                            Event Management
+                        </h1>
+                        <div className="relative w-full md:w-auto md:min-w-[320px]">
+                            <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+                                <Search className="h-5 w-5 text-gray-400" />
+                            </div>
+                            <input
+                                type="text"
+                                className="w-full py-2.5 pl-10 pr-10 rounded-xl bg-black/50 border border-gray-600 text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-colors"
+                                placeholder="Search by title, location, ID..."
+                                value={searchQuery}
+                                onChange={(e) => setSearchQuery(e.target.value)}
+                            />
+                            {searchQuery && (
+                                <button
+                                    onClick={clearSearch}
+                                    className="absolute inset-y-0 right-0 pr-3 flex items-center text-gray-400 hover:text-white"
+                                    aria-label="Clear search"
+                                >
+                                    <X className="h-5 w-5" />
+                                </button>
+                            )}
+                        </div>
+                    </div>
+
+                    <div className="flex flex-col sm:flex-row gap-3 sm:gap-4 items-start sm:items-center flex-wrap">
+                        <Button asChild variant="outline" className="w-full sm:w-auto text-green-400 !p-6 rounded-full font-semibold shadow-md  transition-all">
+                            <Link href="/admin/events/create" className="flex items-center gap-2">
+                                <PlusCircle size={20} /> Create New
+                            </Link>
+                        </Button>
+                        <Button asChild variant="outline" className="w-full sm:w-auto border-sky-500 text-sky-300 hover:bg-sky-500/20 hover:text-sky-200 !p-6 rounded-full font-semibold shadow hover:shadow-sky-500/20 transition-all">
+                            <Link href="/admin/import" className="flex items-center gap-2">
+                                <UploadCloud size={20} /> Import Events
+                            </Link>
+                        </Button>
                         {selectedEvents.length > 0 && (
                             <Button
                                 onClick={handleBulkDelete}
                                 disabled={isBulkDeleting}
-                                className={cn(
-                                    "bg-red-500/20 text-white border-red-500/30",
-                                    "hover:bg-red-500/30 hover:border-red-500/50",
-                                    "transition-all duration-300 shadow-lg hover:shadow-red-500/20"
-                                )}
+                                variant="destructive" // This variant already provides good red styling
+                                className="w-full sm:w-auto !p-6 rounded-full font-semibold flex items-center gap-2 sm:ml-auto shadow-md hover:shadow-red-500/30 transition-all bg-red-600 hover:bg-red-500 text-white" // Ensured consistency
                             >
-                                {isBulkDeleting
-                                    ? "Deleting..."
-                                    : `Bulk Delete (${selectedEvents.length})`}
-                                <IoTrash className="ml-2 h-4 w-4" />
+                                {isBulkDeleting ? <Loader2 size={20} className="animate-spin mr-2" /> : <Trash2 size={20} className="mr-1.5" />} {/* Adjusted icon size and margin */}
+                                {isBulkDeleting ? "Deleting..." : `Delete (${selectedEvents.length})`}
                             </Button>
                         )}
                     </div>
-                    <Card className="bg-black/50 border-gray-700 shadow-lg">
-                        <CardHeader>
-                            <CardTitle className="text-white">
-                                Event List
-                            </CardTitle>
-                            <CardDescription className="text-gray-400">
-                                View and manage events.
-                            </CardDescription>
-                        </CardHeader>
-                        <CardContent>
-                            {events && events.length > 0 ? (
-                                <>
-                                    <div className="rounded-md border">
-                                        <Table>
-                                            <TableHeader>
-                                                <TableRow>
-                                                    <TableHead className="w-[60px] text-white">
-                                                        <Checkbox
-                                                            aria-label="Select all events"
-                                                            onCheckedChange={(
-                                                                checked
-                                                            ) =>
-                                                                handleSelectAll(
-                                                                    !!checked
-                                                                )
-                                                            }
-                                                            checked={
-                                                                events.length >
-                                                                    0 &&
-                                                                selectedEvents
-                                                                    .length ===
-                                                                    events.length
-                                                            }
-                                                        />
-                                                    </TableHead>
-                                                    <TableHead className="text-white">
-                                                        Title
-                                                    </TableHead>
-                                                    <TableHead className="text-white">
-                                                        Start Time
-                                                    </TableHead>
-                                                    <TableHead className="text-white">
-                                                        Location
-                                                    </TableHead>
-                                                    <TableHead className="text-right text-white">
-                                                        Actions
-                                                    </TableHead>
-                                                </TableRow>
-                                            </TableHeader>
-                                            <TableBody>
-                                                {events.map((event) => (
+
+                    <div className="w-full">
+                        {loading ? (
+                            <div className="border border-gray-700/70 rounded-xl p-6 bg-black/30 animate-pulse space-y-4">
+                                <div className="h-8 w-1/3 bg-gray-600/50 rounded"></div>
+                                {[...Array(5)].map((_, i) => (
+                                    <div
+                                        key={i}
+                                        className="h-10 w-full bg-gray-600/50 rounded"
+                                    ></div>
+                                ))}
+                            </div>
+                        ) : error ? (
+                            <Alert
+                                variant="destructive"
+                                className="bg-red-900/30 border-red-700/50 text-red-300 rounded-xl"
+                            >
+                                <XCircle className="h-5 w-5 text-red-400" />
+                                <AlertTitle className="font-semibold">
+                                    Error
+                                </AlertTitle>
+                                <AlertDescription>{error}</AlertDescription>
+                            </Alert>
+                        ) : (
+                            <div className="border border-gray-700/70 rounded-xl overflow-hidden bg-black/40">
+                                <Table className="min-w-[700px]">
+                                    <TableHeader className="sticky top-0 bg-black/70 backdrop-blur-sm z-10">
+                                        <TableRow className="border-b-gray-700 hover:bg-transparent">
+                                            <AdminColumnHeader
+                                                sortKey="select"
+                                                isActionOrSelect
+                                                className="w-[60px] pl-4 pr-2 py-3.5"
+                                            >
+                                                <Checkbox
+                                                    aria-label="Select all visible events"
+                                                    checked={
+                                                        isAllFilteredSelected
+                                                    }
+                                                    onCheckedChange={(
+                                                        checked
+                                                    ) =>
+                                                        handleSelectAll(
+                                                            !!checked
+                                                        )
+                                                    }
+                                                    disabled={
+                                                        sortedFilteredEvents.length ===
+                                                        0
+                                                    }
+                                                />
+                                            </AdminColumnHeader>
+                                            <AdminColumnHeader
+                                                sortKey="title"
+                                                currentSort={sortConfig}
+                                                requestSort={requestSortAdmin}
+                                                className="w-[35%] px-3 py-3.5"
+                                            >
+                                                Title
+                                            </AdminColumnHeader>
+                                            <AdminColumnHeader
+                                                sortKey="start_time"
+                                                currentSort={sortConfig}
+                                                requestSort={requestSortAdmin}
+                                                className="w-[25%] px-3 py-3.5"
+                                            >
+                                                Start Time
+                                            </AdminColumnHeader>
+                                            <AdminColumnHeader
+                                                sortKey="location"
+                                                currentSort={sortConfig}
+                                                requestSort={requestSortAdmin}
+                                                className="hidden md:table-cell w-[20%] px-3 py-3.5"
+                                            >
+                                                Location
+                                            </AdminColumnHeader>
+                                            <AdminColumnHeader
+                                                sortKey="actions"
+                                                isActionOrSelect
+                                                className="w-[15%] text-right pr-4 py-3.5"
+                                            >
+                                                Actions
+                                            </AdminColumnHeader>
+                                        </TableRow>
+                                    </TableHeader>
+                                    <TableBody className="divide-y divide-gray-800/70">
+                                        {sortedFilteredEvents.length > 0 ? (
+                                            sortedFilteredEvents.map(
+                                                (
+                                                    event: EventData // Typed event here
+                                                ) => (
                                                     <TableRow
                                                         key={event.id}
-                                                        className="hover:bg-gray-800/50 transition-colors"
+                                                        className="hover:bg-gray-500/10 transition-colors group"
                                                     >
-                                                        <TableCell
-                                                            className="font-medium"
-                                                        >
+                                                        <TableCell className="pl-4 pr-2 py-3">
                                                             <Checkbox
                                                                 aria-label={`Select event ${event.title}`}
+                                                                checked={selectedEvents.includes(
+                                                                    event.id
+                                                                )}
                                                                 onCheckedChange={(
                                                                     checked
                                                                 ) =>
@@ -504,59 +432,93 @@ const AdminEventsPage = () => {
                                                                         !!checked
                                                                     )
                                                                 }
-                                                                checked={selectedEvents.includes(
-                                                                    event.id
-                                                                )}
                                                             />
                                                         </TableCell>
-                                                        <TableCell className="text-gray-300">
-                                                            {event.title}
+                                                        <TableCell className="font-medium text-gray-100 group-hover:text-white py-3 pr-3 truncate max-w-xs">
+                                                            <Link
+                                                                href={`/events/${event.id}`}
+                                                                target="_blank"
+                                                                className="hover:text-blue-400 hover:underline"
+                                                                title={
+                                                                    event.title
+                                                                }
+                                                            >
+                                                                {event.title}
+                                                            </Link>
                                                         </TableCell>
-                                                        <TableCell className="text-gray-300">
+                                                        <TableCell className="text-gray-300 py-3 pr-3 whitespace-nowrap">
                                                             {new Date(
                                                                 event.start_time
-                                                            ).toLocaleString()}
+                                                            ).toLocaleString(
+                                                                undefined,
+                                                                {
+                                                                    dateStyle:
+                                                                        "medium",
+                                                                    timeStyle:
+                                                                        "short",
+                                                                }
+                                                            )}
                                                         </TableCell>
-                                                        <TableCell className="text-gray-300">
-                                                            {event.location}
+                                                        <TableCell className="text-gray-300 py-3 pr-3 hidden md:table-cell truncate max-w-[200px]">
+                                                            {event.location ||
+                                                                "N/A"}
                                                         </TableCell>
-                                                        <TableCell className="text-right space-x-2">
-                                                            <Link
-                                                                href={`/admin/events/${event.id}`}
-                                                                className="text-blue-400 hover:text-blue-300 transition-colors"
+                                                        <TableCell className="text-right space-x-1 py-3 pr-4">
+                                                            <Button
+                                                                asChild
+                                                                variant="ghost"
+                                                                size="icon"
+                                                                className="h-9 w-9 text-blue-400 hover:text-blue-300 hover:bg-blue-500/15 rounded-full"
                                                             >
-                                                                Edit
-                                                            </Link>
+                                                                <Link
+                                                                    href={`/admin/events/edit/${event.id}`}
+                                                                >
+                                                                    {" "}
+                                                                    <Edit3
+                                                                        size={
+                                                                            16
+                                                                        }
+                                                                    />{" "}
+                                                                </Link>
+                                                            </Button>
                                                             <Button
                                                                 variant="ghost"
                                                                 size="icon"
                                                                 onClick={() =>
                                                                     handleDeleteEvent(
-                                                                        event.id
+                                                                        event.id,
+                                                                        event.title
                                                                     )
                                                                 }
-                                                                className="text-red-400 hover:text-red-300 transition-colors"
+                                                                className="h-9 w-9 text-red-400 hover:text-red-300 hover:bg-red-500/15 rounded-full"
                                                             >
-                                                                <IoTrash className="h-4 w-4" />
+                                                                <Trash2
+                                                                    size={16}
+                                                                />
                                                             </Button>
                                                         </TableCell>
                                                     </TableRow>
-                                                ))}
-                                            </TableBody>
-                                        </Table>
-                                    </div>
-                                    {/* <EventsTable events={events} /> */}
-                                </>
-                            ) : (
-                                <p className="text-gray-400">No events found.</p>
-                            )}
-                        </CardContent>
-                    </Card>
+                                                )
+                                            )
+                                        ) : (
+                                            <TableRow className="hover:bg-transparent">
+                                                <TableCell
+                                                    colSpan={5}
+                                                    className="h-32 text-center text-gray-400 text-lg"
+                                                >
+                                                    {searchQuery
+                                                        ? "No events match your search."
+                                                        : "No events to display."}
+                                                </TableCell>
+                                            </TableRow>
+                                        )}
+                                    </TableBody>
+                                </Table>
+                            </div>
+                        )}
+                    </div>
                 </div>
-            </div>
+            </main>
         </div>
     );
-};
-
-export default AdminEventsPage;
-
+}

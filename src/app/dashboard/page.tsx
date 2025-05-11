@@ -696,11 +696,7 @@ const DashboardPage = () => {
 
     return (
         <div className="relative min-h-screen text-white bg-black overflow-x-hidden">
-            <FullScreenBackground
-                darkOverlay
-                blur
-                imageUrl="https://images.unsplash.com/photo-1635776062127-d379bfcba9f8?q=80&w=1932&auto=format&fit=crop&ixlib=rb-4.1.0&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D"
-            />
+            <FullScreenBackground />
             <Navbar />
             <main className="relative z-10 w-full max-w-7xl mx-auto py-8 px-4 sm:px-6 lg:px-8 space-y-10 mt-20 sm:mt-24">
                 {renderContent()}
