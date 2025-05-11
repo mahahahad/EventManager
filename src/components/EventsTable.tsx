@@ -321,14 +321,14 @@ export default function EventsTable({ events }: Props) {
                             
                             <DialogFooter className="px-6 py-4 bg-black/50 flex-shrink-0 rounded-b-2xl">
                                 <div className="flex flex-col sm:flex-row sm:justify-end gap-3 w-full">
-                                    <Button variant="outline" onClick={() => setIsDialogOpen(false)} className="border-gray-600 hover:bg-gray-700/50 text-gray-200 w-full sm:w-auto rounded-full">Close</Button>
+                                    <Button variant="outline" onClick={() => setIsDialogOpen(false)} className="border-gray-600 !p-6 mr-auto hover:bg-gray-700/50 text-gray-200 w-full sm:w-auto rounded-full">Close</Button>
                                     {selectedEventForDialog.external_id && selectedEventForDialog.source === "intra_42" && (
-                                        <Button asChild className="bg-blue-600 hover:bg-blue-500 text-white w-full sm:w-auto rounded-full">
+                                        <Button asChild className="bg-blue-600 !p-6 hover:bg-blue-500 text-white w-full sm:w-auto rounded-full">
                                             <a href={`https://intra.42.fr/events/${selectedEventForDialog.external_id}`} target="_blank" rel="noopener noreferrer" className="flex items-center justify-center gap-1.5">Intra <ExternalLinkIcon size={14} /></a>
                                         </Button>
                                     )}
                                     <Link href={`/events/${selectedEventForDialog.id}`} passHref legacyBehavior>
-                                        <Button asChild className="bg-sky-600 hover:bg-sky-500 text-white w-full sm:w-auto rounded-full">
+                                        <Button asChild className="bg-sky-600 !p-6 hover:bg-sky-500 text-white w-full sm:w-auto rounded-full">
                                             <a className="flex items-center justify-center gap-1.5">Full Details <ExternalLinkIcon size={14} /></a>
                                         </Button>
                                     </Link>

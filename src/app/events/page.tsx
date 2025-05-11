@@ -17,7 +17,6 @@ export default function EventsPage() {
     const [searchQuery, setSearchQuery] = useState("");
     const [filteredEvents, setFilteredEvents] = useState<EventData[]>([]);
 
-    // ... (useEffect for fetching events and filtering remains the same)
     useEffect(() => {
         const fetchEvents = async () => {
             setLoading(true);

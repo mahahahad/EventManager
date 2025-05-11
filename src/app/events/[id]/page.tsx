@@ -7,7 +7,7 @@ import { useParams, useRouter } from "next/navigation";
 import { Event as EventType } from "@/types/database";
 import { Button } from "@/components/ui/button";
 import FullScreenBackground from "@/components/FullScreenBackground";
-import { IoArrowBack } from "react-icons/io5";
+import { IoArrowBack } from "react-icons/io5"; // Using react-icons for Back button
 import {
     CalendarDays,
     Clock,
@@ -15,51 +15,105 @@ import {
     Info,
     Link2,
     Users,
-    Image as ImageIcon,
-    CheckCircle2,
-    XCircle,
+    // Image as ImageIcon, // Can remove if not used directly
+    // CheckCircle2, // From previous versions, can remove if not used
+    XCircle, // For error state
     Loader2,
     LogIn,
     UserCheck,
-    UserX, // For Unregister button
+    UserX,
+    ExternalLink as ExternalLinkIcon, // For external links in footer
 } from "lucide-react";
+import { motion } from "framer-motion";
 
-// Helper to cn function if not globally available
+// cn utility (ensure it's defined or imported if used elsewhere, or define locally)
 function cn(...classes: string[]) {
-    return classes.filter(Boolean).join(' ');
+    return classes.filter(Boolean).join(" ");
 }
 
-// Skeleton Loader for Event Detail Page
-const EventDetailSkeleton = () => (
-    <div className="fixed top-0 left-0 w-full h-full bg-black bg-opacity-50 flex justify-center items-center p-4 z-40">
-         <div className="absolute top-4 left-4">
-            <div className="h-10 w-24 bg-gray-700/50 animate-pulse rounded-full" />
-        </div>
-        <div className="relative bg-black/40 backdrop-blur-xl shadow-2xl rounded-[32px] w-[90%] md:w-[80%] lg:w-[70%] h-auto max-h-[90vh] overflow-y-auto p-6 sm:p-8 md:p-10 border border-gray-700/50">
-            <div className="animate-pulse space-y-6 mt-8">
-                <div className="h-8 w-3/4 bg-gray-600/50 rounded"></div> {/* Title */}
-                <div className="space-y-3">
-                    <div className="h-5 w-1/2 bg-gray-600/50 rounded"></div> {/* Location */}
-                    <div className="h-5 w-2/3 bg-gray-600/50 rounded"></div> {/* Start Time */}
-                    <div className="h-5 w-2/3 bg-gray-600/50 rounded"></div> {/* End Time */}
+// Re-using DialogDetailItem structure for consistency
+const EventPageDetailItem = ({
+    icon: Icon,
+    label,
+    value,
+    children,
+}: {
+    icon: React.ElementType;
+    label: string;
+    value?: React.ReactNode;
+    children?: React.ReactNode;
+}) => (
+    <div className="flex items-start space-x-3">
+        <Icon className="w-4 h-4 text-sky-400 mt-1 flex-shrink-0 opacity-80" />
+        <div>
+            <span className="font-medium text-gray-400 text-xs uppercase tracking-wider">
+                {label}
+            </span>
+            {value && (
+                <div className="text-gray-100 mt-0.5 text-sm sm:text-base">
+                    {value}
                 </div>
-                <div className="h-20 w-full bg-gray-600/50 rounded"></div> {/* Description */}
-                <div className="h-48 w-full bg-gray-600/50 rounded"></div> {/* Image */}
-                <div className="h-10 w-1/3 bg-gray-600/50 rounded self-center_ mt-4"></div> {/* Register Button */}
-            </div>
+            )}
+            {children && (
+                <div className="text-gray-100 mt-0.5 text-sm sm:text-base">
+                    {children}
+                </div>
+            )}
         </div>
     </div>
 );
 
+// Skeleton Loader for Event Detail Page - Updated for consistency
+const EventDetailSkeleton = () => (
+    <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60">
+        <div className="absolute top-6 left-6">
+            <div className="h-10 w-24 bg-gray-700/50 animate-pulse rounded-full" />{" "}
+            {/* Back button placeholder */}
+        </div>
+        <div className="relative bg-black/70 backdrop-blur-2xl shadow-2xl rounded-3xl w-[90%] sm:w-[80%] md:w-[70%] lg:max-w-3xl max-h-[90vh] p-0 border border-gray-700/60 flex flex-col">
+            {/* Image Placeholder */}
+            <div className="w-full h-48 sm:h-60 md:h-64 bg-gray-700/40 animate-pulse rounded-t-3xl flex-shrink-0"></div>
+
+            {/* Content Placeholder */}
+            <div className="p-6 sm:p-8 flex-grow space-y-6 animate-pulse">
+                <div className="h-10 w-3/4 bg-gray-600/50 rounded-lg"></div>{" "}
+                {/* Title */}
+                <div className="space-y-4">
+                    <div className="h-6 w-1/2 bg-gray-600/50 rounded"></div>{" "}
+                    {/* Detail Item */}
+                    <div className="h-6 w-2/3 bg-gray-600/50 rounded"></div>{" "}
+                    {/* Detail Item */}
+                    <div className="h-6 w-1/2 bg-gray-600/50 rounded"></div>{" "}
+                    {/* Detail Item */}
+                </div>
+                <div className="h-8 w-1/3 bg-gray-600/50 rounded-lg mt-2"></div>{" "}
+                {/* Description Title */}
+                <div className="space-y-2">
+                    <div className="h-4 w-full bg-gray-600/50 rounded"></div>
+                    <div className="h-4 w-full bg-gray-600/50 rounded"></div>
+                    <div className="h-4 w-5/6 bg-gray-600/50 rounded"></div>
+                </div>
+            </div>
+
+            {/* Footer Placeholder */}
+            <div className="px-6 py-4 bg-black/50 flex-shrink-0 rounded-b-3xl border-t border-gray-700/70">
+                <div className="flex flex-col sm:flex-row sm:justify-end gap-3 w-full">
+                    <div className="h-10 w-full sm:w-32 bg-gray-600/50 animate-pulse rounded-full"></div>
+                    <div className="h-10 w-full sm:w-36 bg-gray-600/50 animate-pulse rounded-full"></div>
+                </div>
+            </div>
+        </div>
+    </div>
+);
 
 export default function EventDetailPage() {
     const [event, setEvent] = useState<EventType | null>(null);
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState<string | null>(null);
     const [isRegistered, setIsRegistered] = useState(false);
-    const [registrationId, setRegistrationId] = useState<string | null>(null); // To store the ID of the registration for unregistering
+    const [registrationId, setRegistrationId] = useState<string | null>(null);
     const [isRegistering, setIsRegistering] = useState(false);
-    const [isUnregistering, setIsUnregistering] = useState(false); // New state
+    const [isUnregistering, setIsUnregistering] = useState(false);
     const [userId, setUserId] = useState<string | null>(null);
 
     const { id: eventId } = useParams<{ id: string }>();
@@ -67,10 +121,10 @@ export default function EventDetailPage() {
 
     useEffect(() => {
         const getCurrentUser = async () => {
-            const { data: { user } } = await supabase.auth.getUser();
-            if (user) {
-                setUserId(user.id);
-            }
+            const {
+                data: { user },
+            } = await supabase.auth.getUser();
+            setUserId(user ? user.id : null); // Set to null if no user
         };
         getCurrentUser();
     }, []);
@@ -83,10 +137,11 @@ export default function EventDetailPage() {
                 return;
             }
 
-            setLoading(true);
+            // Don't set loading to true if userId is still undefined (initial load)
+            // This avoids a flash of skeleton if user loads quickly
+            if (userId !== undefined) setLoading(true);
             setError(null);
 
-            // Fetch event details
             const { data: eventData, error: eventError } = await supabase
                 .from("events")
                 .select("*")
@@ -95,7 +150,7 @@ export default function EventDetailPage() {
 
             if (eventError) {
                 console.error("Error fetching event:", eventError);
-                setError("Failed to fetch event details. It might not exist or there was a network issue.");
+                setError("Failed to fetch event details.");
                 setEvent(null);
             } else if (eventData) {
                 setEvent(eventData as EventType);
@@ -104,171 +159,207 @@ export default function EventDetailPage() {
                 setEvent(null);
             }
 
-            // Check registration status if user is logged in
             if (userId && eventData) {
-                const { data: registrationData, error: registrationError } = await supabase
+                const { data: regData, error: regError } = await supabase
                     .from("event_registrations")
-                    .select("id") // Fetch the registration ID
+                    .select("id")
                     .eq("user_id", userId)
                     .eq("event_id", eventId)
                     .maybeSingle();
-
-                if (registrationError) {
-                    console.error("Error checking registration status:", registrationError);
-                } else if (registrationData) {
+                if (regError)
+                    console.error("Error checking registration:", regError);
+                else if (regData) {
                     setIsRegistered(true);
-                    setRegistrationId(registrationData.id); // Store registration ID
+                    setRegistrationId(regData.id);
                 } else {
                     setIsRegistered(false);
                     setRegistrationId(null);
                 }
             } else {
-                 setIsRegistered(false); // Ensure these are reset if no userId or eventData
-                 setRegistrationId(null);
+                setIsRegistered(false);
+                setRegistrationId(null);
             }
             setLoading(false);
         };
 
-        // Only fetch if userId is available (or determined to be null for anonymous users)
-        // This prevents an unnecessary fetch cycle while userId is still being determined.
-        if (userId !== undefined) { // userId starts as null, then string, or stays null
+        // Fetch when eventId is present AND (userId is determined OR it's the initial load without userId yet)
+        if (eventId && (userId !== undefined || !loading)) {
             fetchEventAndRegistrationStatus();
-        } else if (!userId && !loading && eventId) { // Case where user is not logged in, but we have eventId
-             fetchEventAndRegistrationStatus(); // Fetch event details anyway
         }
+    }, [eventId, userId]); // Removed `loading` from deps to avoid re-fetch loops
 
-    }, [eventId, userId, loading]); // `loading` in dependency array to re-check if initial user fetch was pending
+    const handleGoBack = () => router.back();
 
-    const handleGoBack = () => {
-        router.back();
-    };
-
-    const formatDate = (dateString: string | null | undefined) => {
+    const formatDate = (
+        dateString: string | null | undefined,
+        options?: Intl.DateTimeFormatOptions
+    ) => {
         if (!dateString) return "N/A";
+        const defaultOptions: Intl.DateTimeFormatOptions = {
+            year: "numeric",
+            month: "long",
+            day: "numeric",
+            hour: "2-digit",
+            minute: "2-digit",
+            hour12: true, // Default to 12-hour format
+            timeZone: "Asia/Dubai", // Consider making this dynamic or user-configurable
+            ...options,
+        };
         try {
-            return new Date(dateString).toLocaleString("en-AE", {
-                year: 'numeric', month: 'long', day: 'numeric',
-                hour: '2-digit', minute: '2-digit',
-                timeZone: "Asia/Dubai",
-            });
+            return new Date(dateString).toLocaleString("en-US", defaultOptions);
         } catch (e) {
+            // en-US for common format, or undefined for locale
             return "Invalid Date";
         }
     };
 
     const handleRegister = async () => {
+        /* ... (remains the same, ensure buttons inside are rounded-full) ... */
         if (!userId) {
-            alert("Please log in to register for events.");
             router.push(`/login?redirect=/events/${eventId}`);
             return;
         }
         if (!event || isRegistered) return;
-
         setIsRegistering(true);
-        const { data, error: registrationError } = await supabase
+        const { data, error: regError } = await supabase
             .from("event_registrations")
-            .insert({
-                user_id: userId,
-                event_id: event.id,
-            })
-            .select('id') // Select the ID of the new registration
+            .insert({ user_id: userId, event_id: event.id })
+            .select("id")
             .single();
-
-        if (registrationError) {
-            console.error("Error registering for event:", registrationError);
-            alert(`Registration failed: ${registrationError.message}`);
+        if (regError) {
+            alert(`Registration failed: ${regError.message}`);
         } else if (data) {
             setIsRegistered(true);
-            setRegistrationId(data.id); // Store the new registration ID
-            alert("Successfully registered for the event!");
+            setRegistrationId(data.id);
+            alert("Successfully registered!");
         }
         setIsRegistering(false);
     };
-
     const handleUnregister = async () => {
+        /* ... (remains the same, ensure buttons inside are rounded-full) ... */
         if (!userId || !event || !isRegistered || !registrationId) return;
-
         setIsUnregistering(true);
-        const { error: unregistrationError } = await supabase
+        const { error: unregError } = await supabase
             .from("event_registrations")
             .delete()
-            .eq("id", registrationId) // Use the specific registration ID
-            .eq("user_id", userId);   // Extra safety: ensure it's this user's registration
-
-        if (unregistrationError) {
-            console.error("Error unregistering from event:", unregistrationError);
-            alert(`Unregistration failed: ${unregistrationError.message}`);
+            .eq("id", registrationId)
+            .eq("user_id", userId);
+        if (unregError) {
+            alert(`Unregistration failed: ${unregError.message}`);
         } else {
             setIsRegistered(false);
             setRegistrationId(null);
-            alert("Successfully unregistered from the event.");
+            alert("Successfully unregistered.");
         }
         setIsUnregistering(false);
     };
 
-
-    if (loading && !event) { // Show skeleton only if event data is not yet available
-        return <EventDetailSkeleton />;
-    }
+    if (loading && !event) return <EventDetailSkeleton />;
 
     if (error && !event) {
+        /* ... (error display remains the same, ensure buttons rounded-full) ... */
         return (
-            <div className="fixed top-0 left-0 w-full h-full bg-black bg-opacity-70 flex flex-col justify-center items-center p-4 text-white z-50">
-                <FullScreenBackground darkOverlay blur imageUrl="https://images.unsplash.com/photo-1579546929518-9e396f3cc809?ixlib=rb-4.0.3&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D&auto=format&fit=crop&w=1920&q=80" />
-                <div className="relative text-center bg-black/50 backdrop-blur-md p-8 rounded-xl shadow-xl">
-                    <XCircle className="w-16 h-16 text-red-500 mx-auto mb-4" />
-                    <h2 className="text-2xl font-semibold mb-2">Error</h2>
-                    <p className="text-lg mb-6">{error}</p>
-                    <Button onClick={handleGoBack} variant="outline" className="text-white border-white hover:bg-white/10">
-                        <IoArrowBack size={20} className="inline-block mr-2" /> Go Back
-                    </Button>
-                </div>
-            </div>
-        );
-    }
-    
-    if (!event) {
-         return (
-            <div className="fixed top-0 left-0 w-full h-full bg-black bg-opacity-70 flex flex-col justify-center items-center p-4 text-white z-50">
-                <FullScreenBackground darkOverlay blur imageUrl="https://images.unsplash.com/photo-1579546929518-9e396f3cc809?ixlib=rb-4.0.3&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D&auto=format&fit=crop&w=1920&q=80" />
-                 <div className="relative text-center bg-black/50 backdrop-blur-md p-8 rounded-xl shadow-xl">
-                    <Info className="w-16 h-16 text-blue-400 mx-auto mb-4" />
-                    <h2 className="text-2xl font-semibold mb-2">Event Not Found</h2>
-                    <p className="text-lg mb-6">The event you are looking for does not exist or could not be loaded.</p>
-                     <Button onClick={handleGoBack} variant="outline" className="text-white border-white hover:bg-white/10">
-                        <IoArrowBack size={20} className="inline-block mr-2" /> Go Back
+            <div className="fixed inset-0 z-50 flex flex-col items-center justify-center p-4 text-white bg-black/70">
+                <FullScreenBackground
+                    darkOverlay
+                    blur
+                    imageUrl="https://images.unsplash.com/photo-1579546929518-9e396f3cc809?ixlib=rb-4.0.3&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D&auto=format&fit=crop&w=1920&q=80"
+                />
+                <div className="relative p-8 text-center rounded-xl shadow-xl bg-black/50 backdrop-blur-md">
+                    <XCircle className="w-16 h-16 mx-auto mb-4 text-red-500" />
+                    <h2 className="mb-2 text-2xl font-semibold">Error</h2>
+                    <p className="mb-6 text-lg">{error}</p>
+                    <Button
+                        onClick={handleGoBack}
+                        variant="outline"
+                        className="text-white border-white hover:bg-white/10 rounded-full"
+                    >
+                        {" "}
+                        {/* rounded-full */}
+                        <IoArrowBack
+                            size={20}
+                            className="inline-block mr-2"
+                        />{" "}
+                        Go Back
                     </Button>
                 </div>
             </div>
         );
     }
 
-    const DetailItem = ({ icon: Icon, label, value }: { icon: React.ElementType, label: string, value: React.ReactNode }) => (
-        <div className="flex items-start space-x-3 mb-3 text-sm sm:text-base">
-            <Icon className="w-5 h-5 text-blue-300 mt-1 flex-shrink-0" />
-            <div>
-                <span className="font-semibold text-gray-300">{label}:</span>
-                <span className="ml-2 text-gray-100 break-words">{value || "N/A"}</span>
+    if (!event) {
+        /* ... (not found display, ensure buttons rounded-full) ... */
+        return (
+            <div className="fixed inset-0 z-50 flex flex-col items-center justify-center p-4 text-white bg-black/70">
+                <FullScreenBackground
+                    darkOverlay
+                    blur
+                    imageUrl="https://images.unsplash.com/photo-1579546929518-9e396f3cc809?ixlib=rb-4.0.3&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D&auto=format&fit=crop&w=1920&q=80"
+                />
+                <div className="relative p-8 text-center rounded-xl shadow-xl bg-black/50 backdrop-blur-md">
+                    <Info className="w-16 h-16 mx-auto mb-4 text-blue-400" />
+                    <h2 className="mb-2 text-2xl font-semibold">
+                        Event Not Found
+                    </h2>
+                    <p className="mb-6 text-lg">
+                        The event you are looking for does not exist or could
+                        not be loaded.
+                    </p>
+                    <Button
+                        onClick={handleGoBack}
+                        variant="outline"
+                        className="text-white border-white hover:bg-white/10 rounded-full"
+                    >
+                        {" "}
+                        {/* rounded-full */}
+                        <IoArrowBack
+                            size={20}
+                            className="inline-block mr-2"
+                        />{" "}
+                        Go Back
+                    </Button>
+                </div>
             </div>
-        </div>
-    );
+        );
+    }
 
     return (
-        <div className="fixed top-0 left-0 w-full h-full flex justify-center items-center p-2 sm:p-4 z-40">
-            <FullScreenBackground darkOverlay blur imageUrl={event.image_url || "https://images.unsplash.com/photo-1501281668745-f7f57925c3b4?q=80&w=1920&auto=format&fit=crop&ixlib=rb-4.0.3&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D"} />
-            
-            <button
+        <div className="fixed inset-0 z-40 flex items-center justify-center p-2 sm:p-4">
+            {" "}
+            {/* Main container for modal-like page */}
+            <FullScreenBackground
+                darkOverlay
+                blur
+                imageUrl={
+                    event.image_url ||
+                    "https://images.unsplash.com/photo-1501281668745-f7f57925c3b4?q=80&w=1920&auto=format&fit=crop&ixlib=rb-4.0.3&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D"
+                }
+            />
+            <Button
                 onClick={handleGoBack}
-                className="fixed top-4 left-4 bg-black/50 hover:bg-black/70 text-white font-semibold py-2 px-4 rounded-full transition-colors duration-150 z-50 flex items-center backdrop-blur-sm border border-white/20 hover:border-white/40"
+                variant="ghost"
+                size="icon"
+                className="fixed top-5 left-5 sm:top-6 sm:left-6 z-50 h-10 w-10 bg-black/50 hover:bg-black/70 text-white rounded-full backdrop-blur-sm border border-white/20 hover:border-white/40"
                 aria-label="Go back"
             >
-                <IoArrowBack size={18} className="inline-block mr-1.5" /> Back
-            </button>
-
-            {/* Modal-like Card */}
-            <div className="relative bg-black/60 backdrop-blur-2xl shadow-2xl rounded-[24px] sm:rounded-[32px] w-[95%] md:w-[85%] lg:w-[70%] xl:w-[60%] h-auto max-h-[90vh] /* Removed overflow-hidden here to allow description to scroll */ flex flex-col border border-gray-700/60">
+                <IoArrowBack size={20} />
+            </Button>
+            {/* Main Event Detail Card - Styled like the Info Dialog */}
+            <motion.div // Added motion for subtle entrance
+                initial={{ opacity: 0, scale: 0.98, y: 10 }}
+                animate={{ opacity: 1, scale: 1, y: 0 }}
+                transition={{
+                    type: "spring",
+                    stiffness: 260,
+                    damping: 25,
+                    duration: 0.3,
+                }}
+                className="relative bg-black/70 backdrop-blur-2xl shadow-2xl rounded-3xl w-[95%] sm:w-[90%] md:w-[80%] lg:max-w-4xl max-h-[90vh] overflow-hidden flex flex-col border border-gray-700/60"
+            >
                 {event.image_url && (
-                    <div className="w-full h-48 sm:h-64 md:h-72 overflow-hidden flex-shrink-0"> {/* Added flex-shrink-0 */}
+                    <div className="w-full h-48 sm:h-60 md:h-72 overflow-hidden flex-shrink-0 rounded-t-3xl">
+                        {" "}
+                        {/* Match parent rounding */}
                         <img
                             src={event.image_url}
                             alt={event.title || "Event image"}
@@ -276,76 +367,137 @@ export default function EventDetailPage() {
                         />
                     </div>
                 )}
-                {/* This div will contain all content that might need to scroll if image is not present, or just general content area */}
-                <div className="p-5 sm:p-6 md:p-8 flex-grow overflow-y-auto custom-scrollbar"> {/* Content area that scrolls if needed (excluding fixed footer) */}
-                    <h1 className="text-2xl sm:text-3xl md:text-4xl font-bold mb-4 sm:mb-6 text-transparent bg-clip-text bg-gradient-to-r from-gray-100 via-white to-gray-300">
+
+                {/* Header part (Title and Metadata) - Not scrollable */}
+                <div
+                    className={`px-6 pt-6 sm:px-8 sm:pt-8 pb-4 flex-shrink-0 ${
+                        !event.image_url ? "rounded-t-3xl" : ""
+                    }`}
+                >
+                    <h1 className="text-3xl sm:text-4xl lg:text-5xl font-bold mb-3 text-transparent bg-clip-text bg-gradient-to-r from-gray-100 via-white to-gray-300">
                         {event.title}
                     </h1>
-
-                    <div className="grid grid-cols-1 md:grid-cols-2 gap-x-6 gap-y-1 mb-6">
-                        <DetailItem icon={MapPin} label="Location" value={event.location} />
-                        <DetailItem icon={CalendarDays} label="Start Time" value={formatDate(event.start_time)} />
-                        {event.end_time && <DetailItem icon={Clock} label="End Time" value={formatDate(event.end_time)} />}
-                        <DetailItem icon={Users} label="Public" value={event.is_public ? "Yes" : "No"} />
-                        {event.source && <DetailItem icon={Link2} label="Source" value={event.source} />}
-                        {event.external_id && <DetailItem icon={Info} label="External ID" value={event.external_id} />}
+                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-x-6 gap-y-4 mt-4 pb-4 border-b border-gray-700/40">
+                        <EventPageDetailItem
+                            icon={CalendarDays}
+                            label="Starts"
+                            value={formatDate(event.start_time)}
+                        />
+                        {event.end_time && (
+                            <EventPageDetailItem
+                                icon={Clock}
+                                label="Ends"
+                                value={formatDate(event.end_time)}
+                            />
+                        )}
+                        <EventPageDetailItem
+                            icon={MapPin}
+                            label="Location"
+                            value={event.location || "Not specified"}
+                        />
+                        <EventPageDetailItem
+                            icon={Users}
+                            label="Visibility"
+                            value={
+                                event.is_public
+                                    ? "Public Event"
+                                    : "Private Event"
+                            }
+                        />
                     </div>
-
-                    {event.description && (
-                        <div className="mt-4 mb-6">
-                            <h2 className="text-lg sm:text-xl font-semibold mb-2 text-blue-300 flex items-center">
-                                <Info className="w-5 h-5 mr-2" /> Description
-                            </h2>
-                            {/* This div will handle the scrolling for the description */}
-                            <div className="max-h-[200px] sm:max-h-[250px] md:max-h-[300px] overflow-y-auto custom-scrollbar pr-2"> {/* Added pr-2 for scrollbar space */}
-                                <p className="text-gray-200 whitespace-pre-wrap text-sm sm:text-base leading-relaxed">
-                                    {event.description}
-                                </p>
-                            </div>
-                        </div>
-                    )}
                 </div>
-                
-                {/* Action Buttons Footer - this should NOT scroll with the content above */}
-                <div className="px-5 sm:px-6 md:px-8 py-4 border-t border-gray-700/80 bg-black/40 flex-shrink-0"> {/* Added flex-shrink-0 and changed bg */}
+
+                {/* Scrollable Description Area */}
+                {event.description && (
+                    <div className="px-6 sm:px-8 pb-6 flex-grow overflow-y-auto custom-scrollbar-thin">
+                        <h2 className="text-xl font-semibold text-sky-300 mb-2 mt-2">
+                            About this event
+                        </h2>
+                        <p className="text-gray-200 whitespace-pre-wrap text-base leading-relaxed">
+                            {event.description}
+                        </p>
+                    </div>
+                )}
+                {!event.description && (
+                    <div className="px-6 sm:px-8 pb-6 flex-grow flex items-center justify-center">
+                        <p className="text-gray-400 italic">
+                            No detailed description available for this event.
+                        </p>
+                    </div>
+                )}
+
+                {/* Action Buttons Footer */}
+                <div className="px-6 py-4 bg-black/50 flex-shrink-0 rounded-b-3xl border-t border-gray-700/70">
+                    {" "}
+                    {/* Match parent rounding, ADDED border-t back for separation */}
                     <div className="flex flex-col sm:flex-row sm:items-center sm:justify-end gap-3">
                         {userId ? (
                             isRegistered ? (
                                 <>
-                                    <Button variant="outline" className="w-full sm:w-auto text-green-400 border-green-400 hover:bg-green-400/10 cursor-default flex items-center justify-center" disabled>
-                                        <UserCheck className="w-5 h-5 mr-2" /> Already Registered
-                                    </Button>
-                                    <Button 
-                                        onClick={handleUnregister} 
-                                        disabled={isUnregistering} 
-                                        variant="destructive"
-                                        className="w-full sm:w-auto flex items-center justify-center"
+                                    <Button
+                                        variant="outline"
+                                        className="w-full sm:w-auto p-4 text-green-400 border-green-400 hover:bg-green-400/10 cursor-default flex items-center justify-center rounded-full"
+                                        disabled
                                     >
-                                        {isUnregistering ? (<Loader2 className="w-5 h-5 mr-2 animate-spin" />) : (<UserX className="w-5 h-5 mr-2" />)}
-                                        {isUnregistering ? "Unregistering..." : "Unregister"}
+                                        {" "}
+                                        {/* rounded-full */}
+                                        <UserCheck className="w-5 h-5 mr-2" />{" "}
+                                        Registered
+                                    </Button>
+                                    <Button
+                                        onClick={handleUnregister}
+                                        disabled={isUnregistering}
+                                        variant="destructive"
+                                        className="w-full sm:w-auto !p-6 flex items-center justify-center rounded-full"
+                                    >
+                                        {" "}
+                                        {/* rounded-full */}
+                                        {isUnregistering ? (
+                                            <Loader2 className="w-5 h-5 mr-2 animate-spin" />
+                                        ) : (
+                                            <UserX className="w-5 h-5 mr-2" />
+                                        )}
+                                        {isUnregistering
+                                            ? "Unregistering..."
+                                            : "Unregister"}
                                     </Button>
                                 </>
                             ) : (
-                                <Button 
-                                    onClick={handleRegister} 
-                                    disabled={isRegistering} 
-                                    className="w-full sm:w-auto bg-blue-600 hover:bg-blue-500 text-white flex items-center justify-center sm:ml-auto"
+                                <Button
+                                    onClick={handleRegister}
+                                    disabled={isRegistering}
+                                    className="w-full sm:w-auto !p-6 bg-blue-600 hover:bg-blue-500 text-white flex items-center justify-center rounded-full"
                                 >
-                                    {isRegistering ? (<Loader2 className="w-5 h-5 mr-2 animate-spin" />) : (<LogIn className="w-5 h-5 mr-2" />)}
-                                    {isRegistering ? "Registering..." : "Register for Event"}
+                                    {" "}
+                                    {/* rounded-full */}
+                                    {isRegistering ? (
+                                        <Loader2 className="w-5 h-5 mr-2 animate-spin" />
+                                    ) : (
+                                        <LogIn className="w-5 h-5 mr-2" />
+                                    )}
+                                    {isRegistering
+                                        ? "Registering..."
+                                        : "Register"}
                                 </Button>
                             )
                         ) : (
-                            <Button 
-                                onClick={() => router.push(`/login?redirect=/events/${eventId}`)}
-                                className="w-full sm:w-auto bg-gray-500 hover:bg-gray-400 text-white flex items-center justify-center sm:ml-auto"
+                            <Button
+                                onClick={() =>
+                                    router.push(
+                                        `/login?redirect=/events/${eventId}`
+                                    )
+                                }
+                                className="w-full sm:w-auto bg-gray-500 !p-6 hover:bg-gray-400 text-white flex items-center justify-center rounded-full"
                             >
-                                <LogIn className="w-5 h-5 mr-2" /> Log In to Register
+                                {" "}
+                                {/* rounded-full */}
+                                <LogIn className="w-5 h-5 mr-2" /> Log In to
+                                Register
                             </Button>
                         )}
                     </div>
                 </div>
-            </div>
+            </motion.div>
         </div>
     );
 }

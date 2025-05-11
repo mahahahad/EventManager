@@ -639,7 +639,7 @@ const DashboardPage = () => {
                                         : "Select a Date"}
                                 </CardTitle>
                             </CardHeader>
-                            <CardContent className="max-h-[400px] overflow-y-auto space-y-3 custom-scrollbar p-1 pr-3">
+                            <CardContent className="max-h-[400px] overflow-y-auto space-y-3 custom-scrollbar px-4">
                                 {eventsForSelectedDate.length > 0 ? (
                                     eventsForSelectedDate.map((event) => (
                                         <SmallEventListItem
