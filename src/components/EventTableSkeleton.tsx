@@ -1,4 +1,3 @@
-// components/EventTableSkeleton.tsx
 import React from "react";
 
 const EventTableSkeleton = () => {
@@ -7,13 +6,19 @@ const EventTableSkeleton = () => {
             <table className="w-full table-auto text-left">
                 <thead className="border-b border-gray-700">
                     <tr>
-                        <th className="py-2 px-4 text-left text-gray-400 font-semibold w-32 overflow-hidden text-ellipsis">
+                        <th className="py-3 px-6 text-left text-gray-400 font-semibold w-32 overflow-hidden text-ellipsis">
+                            {" "}
+                            {/* Increased padding */}
                             <div className="h-4 bg-gray-700 rounded-md w-1/2"></div>
                         </th>
-                        <th className="py-2 px-4 text-left text-gray-400 font-semibold w-40 overflow-hidden text-ellipsis">
+                        <th className="py-3 px-6 text-left text-gray-400 font-semibold w-40 overflow-hidden text-ellipsis">
+                            {" "}
+                            {/* Increased padding */}
                             <div className="h-4 bg-gray-700 rounded-md w-2/3"></div>
                         </th>
-                        <th className="py-2 px-4 text-left text-gray-400 font-semibold w-24 overflow-hidden text-ellipsis">
+                        <th className="py-3 px-6 text-left text-gray-400 font-semibold w-24 overflow-hidden text-ellipsis">
+                            {" "}
+                            {/* Increased padding */}
                             <div className="h-4 bg-gray-700 rounded-md w-1/3"></div>
                         </th>
                     </tr>
@@ -21,13 +26,19 @@ const EventTableSkeleton = () => {
                 <tbody>
                     {Array.from({ length: 3 }).map((_, index) => (
                         <tr key={index}>
-                            <td className="py-2 px-4 border-b border-gray-800">
+                            <td className="py-3 px-6 border-b border-gray-800">
+                                {" "}
+                                {/* Increased padding */}
                                 <div className="h-4 bg-gray-700 rounded-md w-2/3"></div>
                             </td>
-                            <td className="py-2 px-4 border-b border-gray-800">
+                            <td className="py-3 px-6 border-b border-gray-800">
+                                {" "}
+                                {/* Increased padding */}
                                 <div className="h-4 bg-gray-700 rounded-md w-1/2"></div>
                             </td>
-                            <td className="py-2 px-4 border-b border-gray-800">
+                            <td className="py-3 px-6 border-b border-gray-800">
+                                {" "}
+                                {/* Increased padding */}
                                 <div className="h-4 bg-gray-700 rounded-md w-1/3"></div>
                             </td>
                         </tr>

@@ -19,6 +19,7 @@ import {
     useMotionValue,
     useSpring,
 } from "framer-motion";
+import { ArrowUpDown } from "lucide-react";
 
 interface Props {
     events: EventData[];
@@ -28,6 +29,10 @@ export default function EventsTable({ events }: Props) {
     const [selectedEvent, setSelectedEvent] = useState<EventData | null>(null);
     const [dialogOpen, setDialogOpen] = useState(false);
     const [hoveredEvent, setHoveredEvent] = useState<EventData | null>(null);
+    const [sortConfig, setSortConfig] = useState<{
+        key: keyof EventData;
+        direction: "ascending" | "descending";
+    } | null>(null);
     // Removed setIsLoading here as the parent handles loading
 
     const mouseX = useMotionValue(0);
@@ -50,13 +55,50 @@ export default function EventsTable({ events }: Props) {
         setDialogOpen(true);
     };
 
+    const sortedEvents = useMemo(() => {
+        let sortableItems = [...events];
+        if (sortConfig !== null) {
+            sortableItems.sort((a, b) => {
+                if (sortConfig.key === "start_time") {
+                    const dateA = new Date(a.start_time).getTime();
+                    const dateB = new Date(b.start_time).getTime();
+                    if (dateA < dateB) {
+                        return sortConfig.direction === "ascending" ? -1 : 1;
+                    }
+                    if (dateA > dateB) {
+                        return sortConfig.direction === "ascending" ? 1 : -1;
+                    }
+                    return 0;
+                } else {
+                    const valA = a[sortConfig.key];
+                    const valB = b[sortConfig.key];
+                    if (valA && valB && valA < valB) {
+                        return sortConfig.direction === "ascending" ? -1 : 1;
+                    }
+                    if (valA && valB && valA > valB) {
+                        return sortConfig.direction === "ascending" ? 1 : -1;
+                    }
+                    return 0;
+                }
+            });
+        }
+        return sortableItems;
+    }, [events, sortConfig]);
+
+    const requestSort = (key: keyof EventData) => {
+        let direction: "ascending" | "descending" = "descending"; // Default to descending
+        if (sortConfig && sortConfig.key === key) {
+            direction = sortConfig.direction === "descending" ? "ascending" : "descending"; // Toggle
+        }
+        setSortConfig({ key, direction });
+    };
+
     // We rely on the parent component for the loading state
     if (!events) {
         return (
             <div className="w-full backdrop-blur-xl bg-black/40 shadow-2xl shadow-blue-500/10 rounded-xl p-4 sm:p-6 space-y-6 border border-gray-700/50 relative">
                 <div className="text-center text-gray-400 py-10">
-                    Loading events...{" "}
-                    {/* Or a message like "Fetching events..." */}
+                    Loading events...
                 </div>
             </div>
         );
@@ -74,37 +116,54 @@ export default function EventsTable({ events }: Props) {
 
     return (
         <div className="w-full overflow-x-auto">
-            <div className="max-w-full backdrop-blur-xl bg-black/40 shadow-2xl shadow-blue-500/10 rounded-xl p-4 sm:p-6 space-y-6 border border-gray-700/50 relative">
+            <div className="max-w-full backdrop-blur-md bg-black/10 shadow-2xl shadow-blue-500/10 rounded-xl p-4 sm:p-6 space-y-6 border border-gray-700/50 relative">
                 <table className="w-full table-auto text-left">
                     <thead className="border-b border-gray-700">
                         <tr>
-                            <th className="py-2 px-4 text-left text-gray-400 font-semibold w-32 overflow-hidden text-ellipsis">
-                                Title
+                            <th
+                                className="py-3 px-6 text-left text-gray-400 font-semibold w-32 overflow-hidden text-ellipsis cursor-pointer"
+                                onClick={() => requestSort("title")}
+                            >
+                                <div className="flex items-center gap-1">
+                                    Title
+                                    <ArrowUpDown className="w-4 h-4" />
+                                </div>
                             </th>
-                            <th className="py-2 px-4 text-left text-gray-400 font-semibold w-40 overflow-hidden text-ellipsis">
-                                Start Time
+                            <th
+                                className="py-3 px-6 text-left text-gray-400 font-semibold w-40 overflow-hidden text-ellipsis cursor-pointer"
+                                onClick={() => requestSort("start_time")}
+                            >
+                                <div className="flex items-center gap-1">
+                                    Start Time
+                                    <ArrowUpDown className="w-4 h-4" />
+                                </div>
                             </th>
-                            <th className="py-2 px-4 text-left text-gray-400 font-semibold w-24 overflow-hidden text-ellipsis">
-                                Location
+                            <th
+                                className="py-3 px-6 text-left text-gray-400 font-semibold w-24 overflow-hidden text-ellipsis cursor-pointer"
+                                onClick={() => requestSort("location")}
+                            >
+                                <div className="flex items-center gap-1">
+                                    Location
+                                    <ArrowUpDown className="w-4 h-4" />
+                                </div>
                             </th>
-                            {/* Add more headers with fixed widths as needed */}
                         </tr>
                     </thead>
                     <tbody>
-                        {events.map((event) => (
+                        {sortedEvents.map((event) => (
                             <motion.tr
                                 key={event.id}
-                                className="hover:bg-gray-800/50 transition cursor-pointer"
+                                className="hover:bg-gray-800/50 transition cursor-pointer border-b border-gray-800 last:border-none" // Added border
                                 onClick={() =>
                                     (window.location.href = `/events/${event.id}`)
                                 }
                                 onMouseEnter={() => setHoveredEvent(event)}
                                 onMouseLeave={() => setHoveredEvent(null)}
                             >
-                                <td className="py-2 px-4 w-32 overflow-hidden text-ellipsis whitespace-nowrap">
+                                <td className="py-3 px-6 w-32 overflow-hidden text-ellipsis whitespace-nowrap">
                                     {event.title}
                                 </td>
-                                <td className="py-2 px-4 w-40 overflow-hidden text-ellipsis whitespace-nowrap">
+                                <td className="py-3 px-6 w-40 overflow-hidden text-ellipsis whitespace-nowrap">
                                     {new Date(event.start_time).toLocaleString(
                                         undefined,
                                         {
@@ -113,10 +172,9 @@ export default function EventsTable({ events }: Props) {
                                         }
                                     )}
                                 </td>
-                                <td className="py-2 px-4 w-24 overflow-hidden text-ellipsis whitespace-nowrap">
+                                <td className="py-3 px-6 w-24 overflow-hidden text-ellipsis whitespace-nowrap">
                                     {event.location}
                                 </td>
-                                {/* Add more data cells */}
                             </motion.tr>
                         ))}
                     </tbody>
@@ -211,7 +269,9 @@ export default function EventsTable({ events }: Props) {
                             borderRadius: "0.3rem",
                             zIndex: 1000,
                             pointerEvents: "none",
-                            maxWidth: "300px",
+                            maxWidth: "300px",          // Added max-width
+                            overflow: "hidden",       // Added overflow hidden
+                            textOverflow: "ellipsis", // Added text-overflow ellipsis
                             fontSize: "0.8rem",
                             lineHeight: "1.4",
                         }}
@@ -223,3 +283,4 @@ export default function EventsTable({ events }: Props) {
         </div>
     );
 }
+

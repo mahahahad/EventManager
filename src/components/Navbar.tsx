@@ -12,8 +12,18 @@ import {
     DropdownMenuItem,
 } from "@/components/ui/dropdown-menu";
 import { motion, AnimatePresence } from "framer-motion";
+import {
+    Home,
+    LayoutDashboard,
+    Calendar,
+    LogIn,
+    LogOut,
+    UserPlus,
+    Users,
+    ChevronDown,
+} from "lucide-react";
 
-export default function Navbar() {
+const Navbar = () => {
     const [user, setUser] = useState<any | null>(null);
     const [isAdmin, setIsAdmin] = useState(false);
     const [menuOpen, setMenuOpen] = useState(false);
@@ -24,6 +34,7 @@ export default function Navbar() {
         width: number;
         left: number;
     } | null>(null);
+    const [isDropdownOpen, setIsDropdownOpen] = useState(false); // State for dropdown visibility
 
     // --- Helper Function to Fetch User Data ---
     const fetchUserData = async (userId: string) => {
@@ -50,7 +61,8 @@ export default function Navbar() {
 
     useEffect(() => {
         const fetchUser = async () => {
-            const { data: authData, error: authError } = await supabase.auth.getUser();
+            const { data: authData, error: authError } =
+                await supabase.auth.getUser();
             if (authError) {
                 console.error("Error fetching auth user:", authError);
                 setUser(null);
@@ -92,7 +104,11 @@ export default function Navbar() {
         }
     };
 
-    const navLinks = ["/", "/dashboard", "/events"];
+    const navLinks = [
+        { path: "/", label: "Home", icon: Home },
+        { path: "/dashboard", label: "Dashboard", icon: LayoutDashboard },
+        { path: "/events", label: "Events", icon: Calendar },
+    ];
 
     return (
         <motion.nav
@@ -117,7 +133,7 @@ export default function Navbar() {
             <div className="hidden md:flex flex-grow justify-center items-center gap-6 relative">
                 {activeIndicatorProps && (
                     <motion.div
-                        className="absolute bg-white rounded-[12px] h-full"
+                        className="absolute bg-white rounded-full h-full"
                         layout
                         initial={false}
                         animate={{
@@ -131,23 +147,24 @@ export default function Navbar() {
                         }}
                     />
                 )}
-                {navLinks.map((path) => (
+                {navLinks.map((navLink) => (
                     <Link
-                        key={path}
-                        href={path}
-                        data-active={path}
-                        className="relative z-10 p-2 rounded-[12px] font-semibold text-sm lg:text-base hover:bg-black/40 transition text-white mix-blend-difference"
+                        key={navLink.path}
+                        href={navLink.path}
+                        data-active={navLink.path}
+                        className="relative z-10 px-4 py-2 rounded-full font-semibold text-sm lg:text-base hover:bg-black/40 transition text-white mix-blend-difference flex items-center gap-3" // Increased px and added py
                         ref={(el) => {
-                            navLinksRef.current[path] = el;
+                            navLinksRef.current[navLink.path] = el;
                         }}
                         onClick={() =>
-                            handleLinkClick(path, navLinksRef.current[path])
+                            handleLinkClick(
+                                navLink.path,
+                                navLinksRef.current[navLink.path]
+                            )
                         }
                     >
-                        {path === "/"
-                            ? "Home"
-                            : path.slice(1).charAt(0).toUpperCase() +
-                              path.slice(2)}
+                        <navLink.icon className="w-4 h-4" />
+                        {navLink.label}
                     </Link>
                 ))}
             </div>
@@ -155,48 +172,67 @@ export default function Navbar() {
             {/* Desktop Dropdown */}
             <div className="hidden md:flex items-center gap-2">
                 {user ? (
-                    <DropdownMenu>
-                        <DropdownMenuTrigger className="font-semibold cursor-pointer hover:bg-black/40 p-2 rounded-[12px] transition text-sm lg:text-base z-10 relative">
+                    <div
+                        onMouseEnter={() => setIsDropdownOpen(true)}
+                        onMouseLeave={() => setIsDropdownOpen(false)}
+                        className="relative"
+                    >
+                        <div className="font-semibold cursor-pointer hover:bg-black/40 p-2 rounded-full transition text-sm lg:text-base z-10  flex items-center gap-2">
                             {user.user_metadata?.display_name || user.email}
-                        </DropdownMenuTrigger>
-                        <DropdownMenuContent
-                            align="end"
-                            className="bg-black/50 backdrop-blur-md shadow-xl rounded-[16px] p-2 space-y-1 z-[60] border-none text-white mt-2 w-48"
-                            forceMount
-                        >
-                            {isAdmin && (
-                                <DropdownMenuItem
-                                    onClick={() => router.push("/admin")}
-                                    className="hover:bg-black/40 transition rounded-[12px] p-2 cursor-pointer text-sm z-10 relative"
+                            <ChevronDown className="w-4 h-4 ml-1" />
+                        </div>
+                        <AnimatePresence>
+                            {isDropdownOpen && (
+                                <motion.div
+                                    initial={{ opacity: 0, y: 10 }}
+                                    animate={{ opacity: 1, y: 0 }}
+                                    exit={{ opacity: 0, y: 10 }}
+                                    transition={{ duration: 0.2 }}
+                                    className="absolute right-0 mt-2 bg-black/50 backdrop-blur-md shadow-xl rounded-[16px] p-2 space-y-1 z-[60] border-none text-white  w-48"
                                 >
-                                    Admin Dashboard
-                                </DropdownMenuItem>
+                                    {isAdmin && (
+                                        <div
+                                            onClick={() => {
+                                                router.push("/admin");
+                                                setIsDropdownOpen(false);
+                                            }}
+                                            className="hover:bg-black/40 transition rounded-full p-2 cursor-pointer text-sm  flex items-center gap-2"
+                                        >
+                                            <Users className="w-4 h-4" />
+                                            Admin Dashboard
+                                        </div>
+                                    )}
+                                    <div
+                                        onClick={async () => {
+                                            await supabase.auth.signOut();
+                                            setUser(null);
+                                            setIsAdmin(false);
+                                            router.push("/");
+                                            setIsDropdownOpen(false);
+                                        }}
+                                        className="hover:bg-black/40 transition rounded-full p-2 cursor-pointer text-sm  flex items-center gap-2"
+                                    >
+                                        <LogOut className="w-4 h-4" />
+                                        Log Out
+                                    </div>
+                                </motion.div>
                             )}
-                            <DropdownMenuItem
-                                onClick={async () => {
-                                    await supabase.auth.signOut();
-                                    setUser(null);
-                                    setIsAdmin(false);
-                                    router.push("/");
-                                }}
-                                className="hover:bg-black/40 transition rounded-[12px] p-2 cursor-pointer text-sm z-10 relative"
-                            >
-                                Log Out
-                            </DropdownMenuItem>
-                        </DropdownMenuContent>
-                    </DropdownMenu>
+                        </AnimatePresence>
+                    </div>
                 ) : (
                     <div className="flex space-x-2">
                         <Link
                             href="/login"
-                            className="hover:bg-black/40 p-2 rounded-[12px] transition text-sm lg:text-base font-semibold z-10 relative"
+                            className="hover:bg-black/40 p-2 rounded-full transition text-sm lg:text-base font-semibold z-10 relative flex items-center gap-2"
                         >
+                            <LogIn className="w-4 h-4" />
                             Log In
                         </Link>
                         <Link
                             href="/signup"
-                            className="bg-blue-600 hover:bg-blue-700 p-2 px-4 rounded-[12px] transition text-sm lg:text-base font-semibold z-10 relative"
+                            className="bg-blue-600 hover:bg-blue-700 p-2 px-4 rounded-full transition text-sm lg:text-base font-semibold z-10 relative flex items-center gap-2"
                         >
+                            <UserPlus className="w-4 h-4" />
                             Sign Up
                         </Link>
                     </div>
@@ -226,33 +262,34 @@ export default function Navbar() {
                             zIndex: 40,
                         }}
                     >
-                        {navLinks.map((path) => (
+                        {navLinks.map((navLink) => (
                             <button
-                                key={path}
+                                key={navLink.path}
                                 onClick={() => {
                                     handleLinkClick(
-                                        path,
-                                        navLinksRef.current[path]
+                                        navLink.path,
+                                        navLinksRef.current[navLink.path]
                                     );
                                 }}
                                 className="font-semibold"
                             >
-                                {path === "/"
-                                    ? "Home"
-                                    : path.slice(1).charAt(0).toUpperCase() +
-                                      path.slice(2)}
+                                <navLink.icon className="w-6 h-6" />
+                                {navLink.label}
                             </button>
                         ))}
-                        {user && isAdmin && (
-                            <button
-                                onClick={() => {
-                                    handleLinkClick("/admin", null);
-                                }}
-                                className="font-semibold"
-                            >
-                                Admin Dashboard
-                            </button>
-                        )}
+                        {user ? (
+                            isAdmin ? (
+                                <button
+                                    onClick={() => {
+                                        handleLinkClick("/admin", null);
+                                    }}
+                                    className="font-semibold flex items-center gap-2"
+                                >
+                                    <Users className="w-6 h-6" />
+                                    Admin Dashboard
+                                </button>
+                            ) : null
+                        ) : null}
                         {user ? (
                             <button
                                 onClick={async () => {
@@ -262,8 +299,9 @@ export default function Navbar() {
                                     router.push("/");
                                     setMenuOpen(false);
                                 }}
-                                className="font-semibold"
+                                className="font-semibold flex items-center gap-2"
                             >
+                                <LogOut className="w-6 h-6" />
                                 Log Out
                             </button>
                         ) : (
@@ -275,8 +313,9 @@ export default function Navbar() {
                                             navLinksRef.current["/login"]
                                         )
                                     }
-                                    className="font-semibold"
+                                    className="font-semibold flex items-center gap-2"
                                 >
+                                    <LogIn className="w-6 h-6" />
                                     Log In
                                 </button>
                                 <button
@@ -286,8 +325,9 @@ export default function Navbar() {
                                             navLinksRef.current["/signup"]
                                         )
                                     }
-                                    className="font-semibold"
+                                    className="font-semibold flex items-center gap-2"
                                 >
+                                    <UserPlus className="w-6 h-6" />
                                     Sign Up
                                 </button>
                             </>
@@ -297,5 +337,6 @@ export default function Navbar() {
             </AnimatePresence>
         </motion.nav>
     );
-}
+};
 
+export default Navbar;

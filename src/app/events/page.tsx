@@ -57,7 +57,7 @@ export default function EventsPage() {
             <FullScreenBackground
                 imageUrl="https://images.unsplash.com/photo-1635776062127-d379bfcba9f8?q=80&w=1932&auto=format&fit=crop&ixlib=rb-4.1.0&ixid=M3wxMjA3fDB8MHxwaG0dby1wYWdlfHx8fGVufDB8fHx8fA%3D%3D"
                 darkOverlay={true}
-                animatedGradient={false} // You can enable this if you like on this page
+                blur={true}
             />
 
             <Navbar />
@@ -91,7 +91,6 @@ export default function EventsPage() {
                 ) : (
                     <EventsTable events={filteredEvents} />
                 )}
-                {/* Use your EventsTable here */}
             </div>
         </div>
     );

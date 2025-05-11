@@ -1,4 +1,3 @@
-// Define a more specific EventData type
 export interface Event {
     id: number;
     title: string;
