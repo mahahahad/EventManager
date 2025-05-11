@@ -13,7 +13,7 @@ const AdminEditEventPage = () => {
     const router = useRouter();
     const [event, setEvent] = useState<Event | null>(null);
     const [title, setTitle] = useState("");
-    const [location, setLocation] = useState<string | null>("");
+    const [location, setLocation] = useState<string | null>(null);
     const [startTime, setStartTime] = useState("");
     const [endTime, setEndTime] = useState<string | null>("");
     const [description, setDescription] = useState<string | null>("");
@@ -157,9 +157,85 @@ const AdminEditEventPage = () => {
                         Edit Event
                     </h2>
                     <form onSubmit={handleUpdate} className="space-y-4 w-full">
-                        {/* ... (your form fields) ... */}
+                        <div>
+                            <label
+                                htmlFor="title"
+                                className="block text-sm font-medium text-gray-300"
+                            >
+                                Title:
+                            </label>
+                            <input
+                                type="text"
+                                id="title"
+                                className="mt-1 p-2 w-full rounded-md bg-neutral-700 text-white border-gray-600 focus:ring-blue-500 focus:border-blue-500"
+                                value={title}
+                                onChange={(e) => setTitle(e.target.value)}
+                                required
+                            />
+                        </div>
+                        <div>
+                            <label
+                                htmlFor="location"
+                                className="block text-sm font-medium text-gray-300"
+                            >
+                                Location:
+                            </label>
+                            <input
+                                type="text"
+                                id="location"
+                                className="mt-1 p-2 w-full rounded-md bg-neutral-700 text-white border-gray-600 focus:ring-blue-500 focus:border-blue-500"
+                                value={location || ""}
+                                onChange={(e) => setLocation(e.target.value)}
+                            />
+                        </div>
+                        <div>
+                            <label
+                                htmlFor="startTime"
+                                className="block text-sm font-medium text-gray-300"
+                            >
+                                Start Time:
+                            </label>
+                            <input
+                                type="datetime-local"
+                                id="startTime"
+                                className="mt-1 p-2 w-full rounded-md bg-neutral-700 text-white border-gray-600 focus:ring-blue-500 focus:border-blue-500"
+                                value={startTime}
+                                onChange={(e) => setStartTime(e.target.value)}
+                                required
+                            />
+                        </div>
+                        <div>
+                            <label
+                                htmlFor="endTime"
+                                className="block text-sm font-medium text-gray-300"
+                            >
+                                End Time:
+                            </label>
+                            <input
+                                type="datetime-local"
+                                id="endTime"
+                                className="mt-1 p-2 w-full rounded-md bg-neutral-700 text-white border-gray-600 focus:ring-blue-500 focus:border-blue-500"
+                                value={endTime || ""}
+                                onChange={(e) => setEndTime(e.target.value)}
+                            />
+                        </div>
+                        <div>
+                            <label
+                                htmlFor="description"
+                                className="block text-sm font-medium text-gray-300"
+                            >
+                                Description:
+                            </label>
+                            <textarea
+                                id="description"
+                                className="mt-1 p-2 w-full rounded-md bg-neutral-700 text-white border-gray-600 focus:ring-blue-500 focus:border-blue-500"
+                                value={description || ""}
+                                onChange={(e) => setDescription(e.target.value)}
+                            />
+                        </div>
 
                         <button
+                            type="button"
                             onClick={() =>
                                 setIsAdditionalDetailsOpen(
                                     !isAdditionalDetailsOpen
@@ -189,7 +265,41 @@ const AdminEditEventPage = () => {
                             }
                             style={{ maxHeight: "300px" }}
                         >
-                            {/* ... (your additional options fields) ... */}
+                            <div>
+                                <label
+                                    htmlFor="imageUrl"
+                                    className="block text-sm font-medium text-gray-300"
+                                >
+                                    Image URL:
+                                </label>
+                                <input
+                                    type="url"
+                                    id="imageUrl"
+                                    className="mt-1 p-2 w-full rounded-md bg-neutral-700 text-white border-gray-600 focus:ring-blue-500 focus:border-blue-500"
+                                    value={imageUrl || ""}
+                                    onChange={(e) =>
+                                        setImageUrl(e.target.value)
+                                    }
+                                />
+                            </div>
+                            <div className="flex items-center">
+                                <input
+                                    id="isPublic"
+                                    type="checkbox"
+                                    className="w-4 h-4 text-blue-600 bg-gray-100 border-gray-300 rounded focus:ring-blue-500 dark:focus:ring-blue-600 dark:ring-offset-gray-800 focus:ring-2 dark:bg-gray-700 dark:border-gray-600"
+                                    checked={isPublic}
+                                    onChange={(e) =>
+                                        setIsPublic(e.target.checked)
+                                    }
+                                />
+                                <label
+                                    htmlFor="isPublic"
+                                    className="ml-2 block text-sm font-medium text-gray-300"
+                                >
+                                    Public Event
+                                </label>
+                            </div>
+                            {/* You can add other additional options here if needed */}
                         </motion.div>
 
                         <button

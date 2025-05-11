@@ -20,12 +20,15 @@ import {
     useSpring,
 } from "framer-motion";
 
-export default function EventsTable() {
-    const [events, setEvents] = useState<EventData[]>([]);
+interface Props {
+    events: EventData[];
+}
+
+export default function EventsTable({ events }: Props) {
     const [selectedEvent, setSelectedEvent] = useState<EventData | null>(null);
     const [dialogOpen, setDialogOpen] = useState(false);
     const [hoveredEvent, setHoveredEvent] = useState<EventData | null>(null);
-    const [isLoading, setIsLoading] = useState(true);
+    // Removed setIsLoading here as the parent handles loading
 
     const mouseX = useMotionValue(0);
     const mouseY = useMotionValue(0);
@@ -42,117 +45,82 @@ export default function EventsTable() {
         return () => window.removeEventListener("mousemove", handleMouseMove);
     }, [mouseX, mouseY]);
 
-    useEffect(() => {
-        const fetchEvents = async () => {
-            setIsLoading(true);
-            const today = new Date().toISOString();
-            const { data, error } = await supabase
-                .from("events")
-                .select("*")
-                .gte("start_time", today)
-                .order("start_time", { ascending: true })
-                .limit(5);
-
-            if (error) {
-                console.error("Error fetching events:", error);
-                setEvents([]);
-            } else {
-                setEvents(data || []);
-            }
-            setIsLoading(false);
-        };
-
-        fetchEvents();
-
-        const channel = supabase
-            .channel("events_realtime_homepage")
-            .on(
-                "postgres_changes",
-                { event: "*", schema: "public", table: "events" },
-                () => {
-                    fetchEvents();
-                }
-            )
-            .subscribe();
-
-        return () => {
-            supabase.removeChannel(channel);
-        };
-    }, []);
-
     const handleRowClick = (event: EventData) => {
         setSelectedEvent(event);
         setDialogOpen(true);
     };
 
-    return (
-        <>
-            <div className="w-full max-w-4xl xl:max-w-5xl backdrop-blur-xl bg-black/40 shadow-2xl shadow-blue-500/10 rounded-xl p-4 sm:p-6 space-y-6 border border-gray-700/50 relative">
-                <div className="flex flex-col sm:flex-row justify-between items-center gap-4">
-                    <h2 className="text-2xl sm:text-3xl font-bold text-left text-white">
-                        Upcoming Events
-                    </h2>
+    // We rely on the parent component for the loading state
+    if (!events) {
+        return (
+            <div className="w-full backdrop-blur-xl bg-black/40 shadow-2xl shadow-blue-500/10 rounded-xl p-4 sm:p-6 space-y-6 border border-gray-700/50 relative">
+                <div className="text-center text-gray-400 py-10">
+                    Loading events...{" "}
+                    {/* Or a message like "Fetching events..." */}
                 </div>
+            </div>
+        );
+    }
 
-                {isLoading ? (
-                    <div className="text-center text-gray-400 py-10">
-                        Loading events...
-                    </div>
-                ) : events.length > 0 ? (
-                    <div className="overflow-x-auto">
-                        <table className="w-full table-auto text-left">
-                            <thead className="border-b border-gray-700">
-                                <tr>
-                                    <th className="py-2 px-4 text-left text-gray-400 font-semibold">
-                                        Title
-                                    </th>
-                                    <th className="py-2 px-4 text-left text-gray-400 font-semibold">
-                                        Start Time
-                                    </th>
-                                    <th className="py-2 px-4 text-left text-gray-400 font-semibold">
-                                        Location
-                                    </th>
-                                </tr>
-                            </thead>
-                            <tbody>
-                                {events.map((event) => (
-                                    <tr
-                                        key={event.id}
-                                        className="hover:bg-gray-800/50 transition cursor-pointer"
-                                        onClick={() =>
-                                            (window.location.href = `/events/${event.id}`)
+    if (events.length === 0) {
+        return (
+            <div className="w-full backdrop-blur-xl bg-black/40 shadow-2xl shadow-blue-500/10 rounded-xl p-4 sm:p-6 space-y-6 border border-gray-700/50 relative">
+                <div className="text-center text-gray-400 py-10">
+                    No upcoming events available at the moment.
+                </div>
+            </div>
+        );
+    }
+
+    return (
+        <div className="w-full overflow-x-auto">
+            <div className="max-w-full backdrop-blur-xl bg-black/40 shadow-2xl shadow-blue-500/10 rounded-xl p-4 sm:p-6 space-y-6 border border-gray-700/50 relative">
+                <table className="w-full table-auto text-left">
+                    <thead className="border-b border-gray-700">
+                        <tr>
+                            <th className="py-2 px-4 text-left text-gray-400 font-semibold w-32 overflow-hidden text-ellipsis">
+                                Title
+                            </th>
+                            <th className="py-2 px-4 text-left text-gray-400 font-semibold w-40 overflow-hidden text-ellipsis">
+                                Start Time
+                            </th>
+                            <th className="py-2 px-4 text-left text-gray-400 font-semibold w-24 overflow-hidden text-ellipsis">
+                                Location
+                            </th>
+                            {/* Add more headers with fixed widths as needed */}
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {events.map((event) => (
+                            <motion.tr
+                                key={event.id}
+                                className="hover:bg-gray-800/50 transition cursor-pointer"
+                                onClick={() =>
+                                    (window.location.href = `/events/${event.id}`)
+                                }
+                                onMouseEnter={() => setHoveredEvent(event)}
+                                onMouseLeave={() => setHoveredEvent(null)}
+                            >
+                                <td className="py-2 px-4 w-32 overflow-hidden text-ellipsis whitespace-nowrap">
+                                    {event.title}
+                                </td>
+                                <td className="py-2 px-4 w-40 overflow-hidden text-ellipsis whitespace-nowrap">
+                                    {new Date(event.start_time).toLocaleString(
+                                        undefined,
+                                        {
+                                            dateStyle: "medium",
+                                            timeStyle: "short",
                                         }
-                                        onMouseEnter={() =>
-                                            setHoveredEvent(event)
-                                        }
-                                        onMouseLeave={() =>
-                                            setHoveredEvent(null)
-                                        }
-                                    >
-                                        <td className="py-2 px-4">
-                                            {event.title}
-                                        </td>
-                                        <td className="py-2 px-4">
-                                            {new Date(
-                                                event.start_time
-                                            ).toLocaleString(undefined, {
-                                                dateStyle: "medium",
-                                                timeStyle: "short",
-                                            })}
-                                        </td>
-                                        <td className="py-2 px-4">
-                                            {event.location}
-                                        </td>
-                                    </tr>
-                                ))}
-                            </tbody>
-                        </table>
-                    </div>
-                ) : (
-                    <div className="text-center text-gray-400 py-10">
-                        No upcoming events available at the moment.
-                    </div>
-                )}
+                                    )}
+                                </td>
+                                <td className="py-2 px-4 w-24 overflow-hidden text-ellipsis whitespace-nowrap">
+                                    {event.location}
+                                </td>
+                                {/* Add more data cells */}
+                            </motion.tr>
+                        ))}
+                    </tbody>
+                </table>
 
                 <Dialog open={dialogOpen} onOpenChange={setDialogOpen}>
                     <DialogContent className="bg-gray-900/80 backdrop-blur-lg border-gray-700 text-white rounded-xl shadow-xl max-w-lg w-full p-0">
@@ -218,7 +186,6 @@ export default function EventsTable() {
                     </DialogContent>
                 </Dialog>
             </div>
-
             {/* Animated Tooltip */}
             <AnimatePresence>
                 {hoveredEvent && hoveredEvent.description && (
@@ -253,6 +220,6 @@ export default function EventsTable() {
                     </motion.div>
                 )}
             </AnimatePresence>
-        </>
+        </div>
     );
 }

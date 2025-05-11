@@ -2,13 +2,18 @@
 
 import { useEffect, useState } from "react";
 import { supabase } from "@/lib/supabaseClient";
-import { Event } from "@/types/event";
+import { Event as EventData } from "@/types/event";
 import Link from "next/link";
+import Navbar from "@/components/Navbar";
+import EventsTable from "@/components/EventsTable"; // Import your EventsTable component
+import { X } from "lucide-react";
 
 export default function EventsPage() {
-    const [events, setEvents] = useState<Event[]>([]);
+    const [events, setEvents] = useState<EventData[]>([]);
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState<string | null>(null);
+    const [searchQuery, setSearchQuery] = useState("");
+    const [filteredEvents, setFilteredEvents] = useState<EventData[]>([]);
 
     useEffect(() => {
         const fetchEvents = async () => {
@@ -32,54 +37,65 @@ export default function EventsPage() {
         fetchEvents();
     }, []);
 
-    const formatDate = (dateString: string | null | undefined) => {
-        if (dateString) {
-            return new Date(dateString).toLocaleString('en-AE', { timeZone: 'Asia/Dubai' });
-        }
-        return 'N/A';
+    useEffect(() => {
+        const results = events.filter((event) =>
+            Object.values(event).some((value) =>
+                String(value).toLowerCase().includes(searchQuery.toLowerCase())
+            )
+        );
+        setFilteredEvents(results);
+    }, [searchQuery, events]);
+
+    const clearSearch = () => {
+        setSearchQuery("");
     };
 
     if (loading) {
-        return <div>Loading events...</div>;
+        return <div className="text-white">Loading events...</div>;
     }
 
     if (error) {
-        return <div>Error: {error}</div>;
+        return <div className="text-red-500">Error: {error}</div>;
     }
 
     return (
-        <div className="p-6 space-y-6">
-            <h2 className="text-2xl font-bold text-white mb-4">All Events</h2>
+        <div className="relative min-h-screen text-white pt-28 pb-12 px-4 sm:px-6 lg:px-8 bg-black overflow-hidden">
+            {/* Background Visuals and Gradient */}
+            <div
+                className="absolute inset-0 bg-cover bg-center bg-no-repeat opacity-20 sm:opacity-30"
+                style={{
+                    backgroundImage:
+                        "url('https://images.unsplash.com/photo-1635776062127-d379bfcba9f8?q=80&w=1932&auto=format&fit=crop&ixlib=rb-4.1.0&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D')",
+                }}
+            ></div>
+            <div className="absolute inset-0 bg-gradient-to-b from-black/50 via-black/70 to-black"></div>
 
-            <div className="overflow-x-auto">
-                <table className="min-w-full bg-black/30 backdrop-blur-lg shadow-md rounded-lg border border-black/40 dark:bg-gray-800/70 dark:border-gray-600 text-white">
-                    <thead className="bg-black/50 dark:bg-gray-700">
-                        <tr>
-                            <th className="py-3 px-4 text-left font-semibold uppercase tracking-wider">Title</th>
-                            <th className="py-3 px-4 text-left font-semibold uppercase tracking-wider">Location</th>
-                            <th className="py-3 px-4 text-left font-semibold uppercase tracking-wider">Start Time</th>
-                            <th className="py-3 px-4 text-left font-semibold uppercase tracking-wider hidden sm:table-cell">End Time</th>
-                            <th className="py-3 px-4 text-left font-semibold uppercase tracking-wider hidden md:table-cell">Public</th>
-                            <th className="py-3 px-4 text-left font-semibold uppercase tracking-wider">Details</th>
-                        </tr>
-                    </thead>
-                    <tbody>
-                        {events.map((event) => (
-                            <tr key={event.id} className="hover:bg-black/40 dark:hover:bg-gray-600">
-                                <td className="py-3 px-4 whitespace-nowrap">{event.title}</td>
-                                <td className="py-3 px-4 whitespace-nowrap">{event.location}</td>
-                                <td className="py-3 px-4 whitespace-nowrap">{formatDate(event.start_time)}</td>
-                                <td className="py-3 px-4 whitespace-nowrap hidden sm:table-cell">{formatDate(event.end_time)}</td>
-                                <td className="py-3 px-4 whitespace-nowrap hidden md:table-cell">{event.is_public ? 'Yes' : 'No'}</td>
-                                <td className="py-3 px-4 whitespace-nowrap">
-                                    <Link href={`/events/${event.id}`} className="text-blue-500 hover:underline">
-                                        View
-                                    </Link>
-                                </td>
-                            </tr>
-                        ))}
-                    </tbody>
-                </table>
+            <Navbar />
+            <div className="relative z-10 p-6 space-y-6 max-w-full">
+                <div className="flex justify-between items-center mb-4">
+                    <h2 className="text-3xl font-bold tracking-tight text-transparent bg-clip-text bg-gradient-to-r from-gray-200 via-white to-gray-300">
+                        All Events
+                    </h2>
+                    <div className="relative w-64">
+                        <input
+                            type="text"
+                            className="w-full px-4 py-2 rounded-md bg-black/50 border border-neutral-600 text-white focus:outline-none focus:border-blue-500 pr-10"
+                            placeholder="Search events..."
+                            value={searchQuery}
+                            onChange={(e) => setSearchQuery(e.target.value)}
+                        />
+                        {searchQuery && (
+                            <button
+                                onClick={clearSearch}
+                                className="absolute inset-y-0 right-3 flex items-center text-neutral-400 hover:text-white focus:outline-none"
+                            >
+                                <X className="h-5 w-5" />
+                            </button>
+                        )}
+                    </div>
+                </div>
+                <EventsTable events={filteredEvents} />{" "}
+                {/* Use your EventsTable here */}
             </div>
         </div>
     );

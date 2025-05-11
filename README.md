@@ -23,6 +23,11 @@ Welcome to **Event Manager**, a sleek and modern web app designed for the 42 com
 
 -   🔄 **Real-time Sync Between Tabs** – Changes are **instantly reflected across open tabs**.
 -   📂 **Supabase Subscriptions** – Ensures smooth **event updates without manual refresh**.
+-   📊 **Bulk CSV import** - Admins can import events from a CSV file.
+
+### 🔥 **Advanced Features**
+
+-   💬 **Live Notifications** - Users get notified when a new event is created.
 
 ### 🎖️ **Bonus**
 

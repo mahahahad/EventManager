@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useState, useRef, useLayoutEffect } from "react";
 import { supabase } from "@/lib/supabaseClient";
 import Link from "next/link";
 import { useRouter, usePathname } from "next/navigation";
@@ -13,23 +13,53 @@ import {
 } from "@/components/ui/dropdown-menu";
 import { motion } from "framer-motion";
 
-// Define background colors for each route
-const routeColors: Record<string, string> = {
-    "/": "rgba(15, 23, 42, 0.6)", // slate-900 @ 60%
-    "/dashboard": "rgba(29, 78, 216, 0.6)", // blue-600 @ 60%
-    "/events": "rgba(5, 150, 105, 0.6)", // emerald-600 @ 60%
-    "/admin": "rgba(185, 28, 28, 0.6)", // red-700 @ 60%
-};
-
 export default function Navbar() {
     const [user, setUser] = useState<any | null>(null);
     const [isAdmin, setIsAdmin] = useState(false);
     const [menuOpen, setMenuOpen] = useState(false);
     const router = useRouter();
     const pathname = usePathname();
+    const navLinksRef = useRef<{ [key: string]: HTMLAnchorElement | null }>({}); // Allow null
+    const [activeIndicatorProps, setActiveIndicatorProps] = useState<{
+        width: number;
+        height: number;
+        left: number;
+        top: number;
+    } | null>(null);
+    const [isInitialRender, setIsInitialRender] = useState(true);
+    const [currentActivePath, setCurrentActivePath] = useState(pathname);
 
-    const backgroundColor = routeColors[pathname] || "rgba(0,0,0,0.3)";
+    useLayoutEffect(() => {
+        setCurrentActivePath(pathname); // Update active path on initial load and route changes
+        const activeLink = Object.values(navLinksRef.current).find(
+            (ref) => ref && isActive(new URL(ref.href).pathname)
+        );
+        if (activeLink) {
+            setActiveIndicatorProps({
+                width: activeLink.offsetWidth,
+                height: activeLink.offsetHeight,
+                left: activeLink.offsetLeft,
+                top: activeLink.offsetTop,
+            });
+        }
+        setIsInitialRender(false);
+    }, [pathname]);
 
+    useEffect(() => {
+        if (user && Object.keys(navLinksRef.current).length > 0) {
+            const activeLink = Object.values(navLinksRef.current).find(
+                (ref) => ref && isActive(new URL(ref.href).pathname)
+            );
+            if (activeLink) {
+                setActiveIndicatorProps({
+                    width: activeLink.offsetWidth,
+                    height: activeLink.offsetHeight,
+                    left: activeLink.offsetLeft,
+                    top: activeLink.offsetTop,
+                });
+            }
+        }
+    }, [user, pathname, navLinksRef]);
     useEffect(() => {
         const fetchUserAndAdminStatus = async () => {
             const { data: authData, error: authError } =
@@ -90,50 +120,133 @@ export default function Navbar() {
         }
     };
 
+    const isActive = (path: string) => pathname === path;
+
+    const linkClasses = (path: string) =>
+        `text-sm lg:text-base font-semibold relative z-10 hover:bg-black/40 p-2 rounded-[12px] transition ${
+            currentActivePath === path ? "text-black" : "text-white"
+        }`; // Initially text-white, becomes black when active
+
+    const mobileLinkClasses = (path: string) =>
+        `text-xl font-semibold relative z-10 hover:bg-black/40 p-3 rounded-[12px] transition ${
+            isActive(path) ? "text-black" : ""
+        }`;
+
+    const handleLinkClick = (path: string, ref: HTMLAnchorElement | null) => {
+        setMenuOpen(false);
+        setCurrentActivePath(path); // Update the active path immediately
+        if (ref) {
+            setActiveIndicatorProps({
+                width: ref.offsetWidth,
+                height: ref.offsetHeight,
+                left: ref.offsetLeft,
+                top: ref.offsetTop,
+            });
+        }
+        router.push(path);
+    };
+
+    useLayoutEffect(() => {
+        // Set initial active indicator position on mount
+        const activeLink = Object.values(navLinksRef.current).find(
+            (ref) => ref && isActive(new URL(ref.href).pathname)
+        );
+        if (activeLink) {
+            setActiveIndicatorProps({
+                width: activeLink.offsetWidth,
+                height: activeLink.offsetHeight,
+                left: activeLink.offsetLeft,
+                top: activeLink.offsetTop,
+            });
+        }
+        setIsInitialRender(false);
+    }, [pathname]);
+
     return (
         <>
             <motion.nav
                 initial={{ backgroundColor: "rgba(0, 0, 0, 0.3)" }}
-                animate={{ backgroundColor }}
-                transition={{ duration: 0.6 }}
+                animate={{ backgroundColor: "rgba(0, 0, 0, 0.3)" }}
+                transition={{ duration: 0.3 }}
                 className="fixed top-4 left-1/2 transform -translate-x-1/2 w-[90%] md:w-[85%] shadow-lg rounded-[48px] px-4 sm:px-6 py-3 flex justify-between items-center text-white z-50 backdrop-blur-lg"
             >
                 <div className="flex-shrink-0">
                     <Link
                         href="/"
-                        className="text-xl font-bold hover:opacity-80 transition"
-                        onClick={() => setMenuOpen(false)}
+                        className="text-xl font-bold hover:opacity-80 transition z-10 relative"
+                        onClick={() =>
+                            handleLinkClick("/", navLinksRef.current["/"])
+                        }
                     >
                         42EventManager
                     </Link>
                 </div>
 
-                <div className="hidden md:flex flex-grow justify-center items-center gap-3 lg:gap-6">
+                <div className="hidden md:flex flex-grow justify-center items-center gap-3 lg:gap-6 relative overflow-hidden rounded-[12px]">
+                    {activeIndicatorProps && (
+                        <motion.div
+                            className="absolute bg-white rounded-[12px]"
+                            layout
+                            style={{ ...activeIndicatorProps, zIndex: 0 }}
+                            transition={{
+                                type: "spring",
+                                stiffness: 300,
+                                damping: 20,
+                            }}
+                        />
+                    )}
                     <Link
                         href="/"
-                        className="text-sm lg:text-base font-semibold hover:bg-black/40 p-2 rounded-[12px] transition"
+                        className={linkClasses("/")}
+                        ref={(el) => {
+                            navLinksRef.current["/"] = el;
+                            return; // Explicitly return void
+                        }}
+                        onClick={() =>
+                            handleLinkClick("/", navLinksRef.current["/"])
+                        }
                     >
                         Home
                     </Link>
                     <Link
                         href="/dashboard"
-                        className="text-sm lg:text-base font-semibold hover:bg-black/40 p-2 rounded-[12px] transition"
+                        className={linkClasses("/dashboard")}
+                        ref={(el) => {
+                            navLinksRef.current["/dashboard"] = el;
+                            return; // Explicitly return void
+                        }}
+                        onClick={() =>
+                            handleLinkClick(
+                                "/dashboard",
+                                navLinksRef.current["/dashboard"]
+                            )
+                        }
                     >
                         Dashboard
                     </Link>
                     <Link
                         href="/events"
-                        className="text-sm lg:text-base font-semibold hover:bg-black/40 p-2 rounded-[12px] transition"
+                        className={linkClasses("/events")}
+                        ref={(el) => {
+                            navLinksRef.current["/events"] = el;
+                            return; // Explicitly return void
+                        }}
+                        onClick={() =>
+                            handleLinkClick(
+                                "/events",
+                                navLinksRef.current["/events"]
+                            )
+                        }
                     >
                         Events
                     </Link>
                 </div>
 
-                <div className="flex items-center gap-2">
+                <div className="flex items-center gap-2 z-10 relative">
                     <div className="hidden md:flex items-center gap-2">
                         {user ? (
                             <DropdownMenu>
-                                <DropdownMenuTrigger className="font-semibold cursor-pointer hover:bg-black/40 p-2 rounded-[12px] transition text-sm lg:text-base">
+                                <DropdownMenuTrigger className="font-semibold cursor-pointer hover:bg-black/40 p-2 rounded-[12px] transition text-sm lg:text-base z-10 relative">
                                     {user.user_metadata?.display_name ||
                                         user.email}
                                 </DropdownMenuTrigger>
@@ -144,10 +257,10 @@ export default function Navbar() {
                                 >
                                     {isAdmin && (
                                         <DropdownMenuItem
-                                            onClick={() =>
-                                                router.push("/admin")
-                                            }
-                                            className="hover:bg-black/40 transition rounded-[12px] p-2 cursor-pointer text-sm"
+                                            onClick={() => {
+                                                router.push("/admin");
+                                            }}
+                                            className="hover:bg-black/40 transition rounded-[12px] p-2 cursor-pointer text-sm z-10 relative"
                                         >
                                             Admin Dashboard
                                         </DropdownMenuItem>
@@ -155,7 +268,7 @@ export default function Navbar() {
                                     {!isAdmin && (
                                         <DropdownMenuItem
                                             onClick={handleBecomeAdmin}
-                                            className="hover:bg-black/40 transition rounded-[12px] p-2 cursor-pointer text-sm"
+                                            className="hover:bg-black/40 transition rounded-[12px] p-2 cursor-pointer text-sm z-10 relative"
                                         >
                                             Become Admin (Dev)
                                         </DropdownMenuItem>
@@ -167,7 +280,7 @@ export default function Navbar() {
                                             setIsAdmin(false);
                                             router.push("/");
                                         }}
-                                        className="hover:bg-black/40 transition rounded-[12px] p-2 cursor-pointer text-sm"
+                                        className="hover:bg-black/40 transition rounded-[12px] p-2 cursor-pointer text-sm z-10 relative"
                                     >
                                         Log Out
                                     </DropdownMenuItem>
@@ -177,13 +290,25 @@ export default function Navbar() {
                             <div className="flex space-x-2">
                                 <Link
                                     href="/login"
-                                    className="hover:bg-black/40 p-2 rounded-[12px] transition text-sm lg:text-base font-semibold"
+                                    className="hover:bg-black/40 p-2 rounded-[12px] transition text-sm lg:text-base font-semibold z-10 relative"
+                                    onClick={() =>
+                                        handleLinkClick(
+                                            "/login",
+                                            navLinksRef.current["/login"]
+                                        )
+                                    }
                                 >
                                     Log In
                                 </Link>
                                 <Link
                                     href="/signup"
-                                    className="bg-blue-600 hover:bg-blue-700 p-2 px-4 rounded-[12px] transition text-sm lg:text-base font-semibold"
+                                    className="bg-blue-600 hover:bg-blue-700 p-2 px-4 rounded-[12px] transition text-sm lg:text-base font-semibold z-10 relative"
+                                    onClick={() =>
+                                        handleLinkClick(
+                                            "/signup",
+                                            navLinksRef.current["/signup"]
+                                        )
+                                    }
                                 >
                                     Sign Up
                                 </Link>
@@ -192,7 +317,7 @@ export default function Navbar() {
                     </div>
 
                     <button
-                        className="md:hidden text-2xl p-2 rounded-full hover:bg-black/40 transition"
+                        className="md:hidden text-2xl p-2 rounded-full hover:bg-black/40 transition z-10 relative"
                         onClick={() => setMenuOpen(!menuOpen)}
                         aria-label="Toggle Menu"
                         aria-expanded={menuOpen}
@@ -217,22 +342,22 @@ export default function Navbar() {
                 >
                     <Link
                         href="/"
-                        className="text-xl font-semibold hover:bg-black/40 p-3 rounded-[12px] transition"
-                        onClick={() => setMenuOpen(false)}
+                        className={mobileLinkClasses("/")}
+                        onClick={() => handleLinkClick("/", null)}
                     >
                         Home
                     </Link>
                     <Link
                         href="/dashboard"
-                        className="text-xl font-semibold hover:bg-black/40 p-3 rounded-[12px] transition"
-                        onClick={() => setMenuOpen(false)}
+                        className={mobileLinkClasses("/dashboard")}
+                        onClick={() => handleLinkClick("/dashboard", null)}
                     >
                         Dashboard
                     </Link>
                     <Link
                         href="/events"
-                        className="text-xl font-semibold hover:bg-black/40 p-3 rounded-[12px] transition"
-                        onClick={() => setMenuOpen(false)}
+                        className={mobileLinkClasses("/events")}
+                        onClick={() => handleLinkClick("/events", null)}
                     >
                         Events
                     </Link>
@@ -242,8 +367,10 @@ export default function Navbar() {
                             {isAdmin && (
                                 <Link
                                     href="/admin"
-                                    className="text-xl font-semibold hover:bg-black/40 p-3 rounded-[12px] transition"
-                                    onClick={() => setMenuOpen(false)}
+                                    className={mobileLinkClasses("/admin")}
+                                    onClick={() =>
+                                        handleLinkClick("/admin", null)
+                                    }
                                 >
                                     Admin Dashboard
                                 </Link>
@@ -280,15 +407,15 @@ export default function Navbar() {
                         <>
                             <Link
                                 href="/login"
-                                className="text-xl font-semibold hover:bg-black/40 p-3 rounded-[12px] transition"
-                                onClick={() => setMenuOpen(false)}
+                                className={mobileLinkClasses("/login")}
+                                onClick={() => handleLinkClick("/login", null)}
                             >
                                 Log In
                             </Link>
                             <Link
                                 href="/signup"
                                 className="text-xl bg-blue-600 hover:bg-blue-700 p-3 px-6 rounded-[12px] transition font-semibold"
-                                onClick={() => setMenuOpen(false)}
+                                onClick={() => handleLinkClick("/signup", null)}
                             >
                                 Sign Up
                             </Link>

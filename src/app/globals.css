@@ -125,3 +125,19 @@ body {
         @apply bg-background text-foreground;
     }
 }
+@keyframes gradient-move {
+    0% {
+        background-position: 0% 50%;
+    }
+    50% {
+        background-position: 100% 50%;
+    }
+    100% {
+        background-position: 0% 50%;
+    }
+}
+
+.animate-gradient-slow {
+    background-size: 300% 300%;
+    animation: gradient-move 10s ease-in-out infinite; /* Adjust duration as needed */
+}

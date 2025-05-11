@@ -4,6 +4,7 @@ import React, { useEffect, useState } from "react";
 import { supabase } from "@/lib/supabaseClient";
 import Link from "next/link";
 import AdminNavbar from "@/components/AdminNavbar"; // Import the navbar
+import { IoCloudUploadOutline, IoTrashOutline } from "react-icons/io5";
 
 interface Event {
     id: string;
@@ -16,29 +17,80 @@ const AdminEventsPage = () => {
     const [events, setEvents] = useState<Event[] | null>(null);
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState<string | null>(null);
+    const [selectedEvents, setSelectedEvents] = useState<string[]>([]);
+    const [isBulkDeleting, setIsBulkDeleting] = useState(false);
 
     useEffect(() => {
-        const fetchEvents = async () => {
-            setLoading(true);
-            setError(null);
-
-            const { data, error } = await supabase
-                .from("events")
-                .select("*") // Select all event details for the admin page
-                .order("start_time", { ascending: true });
-
-            if (error) {
-                console.error("Error fetching events:", error);
-                setError("Failed to fetch events.");
-            } else if (data) {
-                setEvents(data);
-            }
-
-            setLoading(false);
-        };
-
         fetchEvents();
     }, []);
+
+    const fetchEvents = async () => {
+        setLoading(true);
+        setError(null);
+
+        const { data, error } = await supabase
+            .from("events")
+            .select("*") // Select all event details for the admin page
+            .order("start_time", { ascending: true });
+
+        if (error) {
+            console.error("Error fetching events:", error);
+            setError("Failed to fetch events.");
+        } else if (data) {
+            setEvents(data);
+        }
+
+        setLoading(false);
+    };
+
+    const handleCheckboxChange = (eventId: string, isChecked: boolean) => {
+        if (isChecked) {
+            setSelectedEvents([...selectedEvents, eventId]);
+        } else {
+            setSelectedEvents(selectedEvents.filter((id) => id !== eventId));
+        }
+    };
+
+    const handleSelectAll = (isChecked: boolean) => {
+        if (events) {
+            setSelectedEvents(isChecked ? events.map((event) => event.id) : []);
+        }
+    };
+
+    const handleBulkDelete = async () => {
+        if (selectedEvents.length === 0) {
+            alert("Please select events to delete.");
+            return;
+        }
+
+        if (
+            confirm(
+                `Are you sure you want to delete ${selectedEvents.length} selected events?`
+            )
+        ) {
+            setIsBulkDeleting(true);
+            setError(null);
+
+            const { error: deleteError } = await supabase
+                .from("events")
+                .delete()
+                .in("id", selectedEvents);
+
+            if (deleteError) {
+                console.error("Error deleting events:", deleteError);
+                setError("Failed to delete selected events.");
+                alert("Failed to delete selected events.");
+            } else {
+                console.log(
+                    `Successfully deleted ${selectedEvents.length} events.`
+                );
+                setSelectedEvents([]);
+                fetchEvents();
+                alert("Selected events deleted successfully!");
+            }
+            setIsBulkDeleting(false);
+        }
+    };
 
     const handleDeleteEvent = async (id: string) => {
         if (confirm("Are you sure you want to delete this event?")) {
@@ -85,12 +137,49 @@ const AdminEventsPage = () => {
                 >
                     Create New Event
                 </Link>
-
+                <div className="mt-4">
+                    <Link
+                        href="/admin/import"
+                        className="bg-green-500 hover:bg-green-700 text-white font-bold py-2 px-4 rounded focus:outline-none focus:shadow-outline mr-2"
+                    >
+                        <IoCloudUploadOutline
+                            size={16}
+                            className="inline-block mr-2"
+                        />
+                        Import Events
+                    </Link>
+                    {selectedEvents.length > 0 && (
+                        <button
+                            onClick={handleBulkDelete}
+                            className="bg-red-500 hover:bg-red-700 text-white font-bold py-2 px-4 rounded focus:outline-none focus:shadow-outline"
+                            disabled={isBulkDeleting}
+                        >
+                            {isBulkDeleting
+                                ? "Deleting..."
+                                : `Bulk Delete (${selectedEvents.length})`}
+                        </button>
+                    )}
+                </div>
                 {events && events.length > 0 ? (
                     <div className="overflow-x-auto">
                         <table className="min-w-full bg-neutral-800 rounded-md shadow-md">
                             <thead className="bg-neutral-700">
                                 <tr>
+                                    <th className="py-3 px-6 text-left text-xs font-medium uppercase tracking-wider text-gray-300">
+                                        <input
+                                            type="checkbox"
+                                            onChange={(e) =>
+                                                handleSelectAll(
+                                                    e.target.checked
+                                                )
+                                            }
+                                            checked={
+                                                events?.length > 0 &&
+                                                selectedEvents.length ===
+                                                    events.length
+                                            }
+                                        />
+                                    </th>
                                     <th className="py-3 px-6 text-left text-xs font-medium uppercase tracking-wider text-gray-300">
                                         Title
                                     </th>
@@ -109,6 +198,20 @@ const AdminEventsPage = () => {
                                         key={event.id}
                                         className="hover:bg-neutral-900"
                                     >
+                                        <td className="py-4 px-6 whitespace-nowrap">
+                                            <input
+                                                type="checkbox"
+                                                checked={selectedEvents.includes(
+                                                    event.id
+                                                )}
+                                                onChange={(e) =>
+                                                    handleCheckboxChange(
+                                                        event.id,
+                                                        e.target.checked
+                                                    )
+                                                }
+                                            />
+                                        </td>
                                         <td className="py-4 px-6 whitespace-nowrap">
                                             {event.title}
                                         </td>
