@@ -3,7 +3,7 @@
 import React, { useState, useEffect } from "react";
 import { useRouter, useParams } from "next/navigation";
 import { supabase } from "@/lib/supabaseClient";
-import { Event } from "@/types/event";
+import { Event } from "@/types/database";
 import { IoArrowBack, IoChevronDown } from "react-icons/io5";
 import { motion } from "framer-motion";
 import AdminNavbar from "@/components/AdminNavbar";
