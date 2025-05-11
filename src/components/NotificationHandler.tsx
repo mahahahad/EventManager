@@ -3,7 +3,7 @@
 import React, { useState, useEffect, useCallback } from "react";
 import { supabase } from "@/lib/supabaseClient";
 import Notification from "@/components/Notification";
-import { Event } from "@/types/event"; // Assuming you have this type
+import { Event } from "@/types/database"; // Assuming you have this type
 
 const NotificationHandler: React.FC = () => {
     const [notificationMessage, setNotificationMessage] = useState<
