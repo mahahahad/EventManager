@@ -1,92 +1,190 @@
+// components/HeroSection.tsx
 "use client";
 
-import { Button } from "@/components/ui/button"; // Assuming this is your shadcn/ui Button
+import { Button } from "@/components/ui/button";
 import { useRouter } from "next/navigation";
-import EventsTable from "@/components/EventsTable";
-import { ArrowRight } from "lucide-react"; // For an icon in the button
+import EventCard, { EventCardSkeleton } from "@/components/EventCard";
+import EventDialog from "@/components/EventDialog";
+import { ArrowRight } from "lucide-react";
 import { useEffect, useState } from "react";
 import { supabase } from "@/lib/supabaseClient";
 import { Event as EventData } from "@/types/database";
-import FullScreenBackground from "@/components/FullScreenBackground"; // Import the background component
-import EventTableSkeleton from "@/components/EventTableSkeleton"; // Import the skeleton component
+import FullScreenBackground from "@/components/FullScreenBackground";
+import { motion } from 'framer-motion';
 
 export default function HeroSection() {
     const router = useRouter();
     const [upcomingEvents, setUpcomingEvents] = useState<EventData[]>([]);
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState<string | null>(null);
+    const [selectedEventForDialog, setSelectedEventForDialog] =
+        useState<EventData | null>(null);
+    const [isDialogOpen, setIsDialogOpen] = useState(false);
+
+    // Attempt to scroll to top on mount if auto-scroll is an issue
+    useEffect(() => {
+        if (typeof window !== "undefined") {
+            // Check if the page is already at the top to avoid unnecessary scroll if not needed
+            if (window.scrollY !== 0) {
+                 window.scrollTo({ top: 0, left: 0, behavior: 'auto' });
+            }
+        }
+    }, []); // Empty dependency array, runs once on mount
 
     useEffect(() => {
         const fetchUpcomingEvents = async () => {
+            // ... (fetch logic remains the same)
             setLoading(true);
             setError(null);
             const today = new Date().toISOString();
-            const { data, error } = await supabase
+            const { data, error: fetchError } = await supabase
                 .from("events")
-                .select("*")
+                .select(`*, event_tags(tags(name))`)
                 .gte("start_time", today)
                 .order("start_time", { ascending: true })
-                .limit(3); // Limit the number of events for the hero section
+                .limit(3);
 
-            if (error) {
-                console.error("Error fetching upcoming events:", error);
-                setError("Failed to fetch events.");
+            if (fetchError) {
+                let errorMessage = "Oops! We couldn't load upcoming events. Please try refreshing.";
+                if (fetchError.message) {
+                    errorMessage = `Failed to fetch events: ${fetchError.message}`;
+                }
+                setError(errorMessage);
             } else {
                 setUpcomingEvents(data || []);
             }
             setLoading(false);
         };
-
         fetchUpcomingEvents();
     }, []);
 
-    const handleRedirect = () => {
-        router.push("/events"); // Or your main events listing page
+    const handleRedirectToAllEvents = () => {
+        router.push("/events");
+    };
+
+    const openEventDialog = (event: EventData) => {
+        setSelectedEventForDialog(event);
+        setIsDialogOpen(true);
+    };
+
+    const fadeInVariants = {
+        hidden: { opacity: 0, y: 10 },
+        visible: (custom: number = 0) => ({
+            opacity: 1,
+            y: 0,
+            transition: {
+                type: "tween",
+                ease: "easeOut",
+                duration: 0.6,
+                delay: custom * 0.2,
+            },
+        }),
     };
 
     return (
-        <section className="relative min-h-screen flex flex-col justify-center items-center text-center pt-24 pb-12 px-4 sm:px-6 lg:px-8 overflow-hidden">
+        // Ensure this section itself doesn't cause horizontal scroll.
+        // overflow-x-hidden here helps clip animations within this section.
+        <section className="relative min-h-screen flex flex-col justify-center items-center text-center pt-32 pb-16 px-4 sm:px-6 lg:px-8 overflow-x-hidden w-full">
             <FullScreenBackground
-                imageUrl="https://images.unsplash.com/photo-1635776062127-d379bfcba9f8?q=80&w=1932&auto=format&fit=crop&ixlib=rb-4.1.0&ixid=M3wxMjA3fDB8MHxwaG0dby1wYWdlfHx8fGVufDB8fHx8fA%3D%3D"
-                darkOverlay={false}
-                blur={true}
-                animatedGradient={true}
             />
-            <div className="relative z-10 flex flex-col items-center space-y-6 sm:space-y-8 max-w-3xl">
-                <h1 className="text-4xl sm:text-5xl md:text-6xl font-extrabold tracking-tight text-transparent bg-clip-text bg-gradient-to-r from-gray-200 via-white to-gray-300">
-                    Never Miss an Event at{" "}
-                    <span className="text-blue-400">42!</span>
-                </h1>
-                <p className="text-lg sm:text-xl text-gray-300 sm:text-gray-400 max-w-xl">
-                    Discover, subscribe, and stay updated on coding workshops,
-                    hackathons, and community events tailored for the 42
-                    network.
-                </p>
-                <Button
-                    onClick={handleRedirect}
-                    className="mt-6 sm:mt-8 !px-8 !py-8 sm:px-10 sm:py-4 text-base sm:text-lg font-semibold
-                                        bg-blue-600 hover:bg-blue-500 text-white
-                                        rounded-xl shadow-lg hover:shadow-blue-500/50 transition-all duration-300 ease-in-out
-                                        transform hover:scale-105 flex items-center gap-2 group"
+            
+            <div className="relative z-10 flex flex-col flex-grow-1 items-center space-y-6 sm:space-y-8 max-w-3xl w-full mb-12 md:mb-16"> {/* Added w-full */}
+                <motion.h1
+                    className="text-4xl sm:text-5xl md:text-6xl font-extrabold tracking-tight text-transparent bg-clip-text bg-gradient-to-r from-gray-100 via-white to-gray-200"
+                    variants={fadeInVariants}
+                    initial="hidden"
+                    whileInView="visible"
+                    viewport={{ once: true, amount: 0.5 }}
+                    custom={0}
                 >
-                    View All Events
-                    <ArrowRight className="w-5 h-5 transition-transform duration-300 group-hover:translate-x-1" />
-                </Button>
+                    Never Miss an Event at <span className="text-blue-400">42!</span>
+                </motion.h1>
+
+                <motion.p
+                    className="text-lg sm:text-xl text-gray-300 max-w-xl"
+                    variants={fadeInVariants}
+                    initial="hidden"
+                    whileInView="visible"
+                    viewport={{ once: true, amount: 0.5 }}
+                    custom={1}
+                >
+                    Discover, subscribe, and stay updated on coding workshops,
+                    hackathons, and community events tailored for the 42 network.
+                </motion.p>
+                
+                <motion.div
+                    variants={fadeInVariants}
+                    initial="hidden"
+                    whileInView="visible"
+                    viewport={{ once: true, amount: 0.5 }}
+                    custom={2}
+                >
+                    <Button
+                        onClick={handleRedirectToAllEvents}
+                        className="mt-6 sm:mt-8 !p-8 rounded-full text-base sm:text-lg font-semibold bg-blue-600 hover:bg-blue-500 text-white shadow-lg hover:shadow-blue-500/50 transition-all duration-300 ease-in-out transform hover:scale-105 flex items-center gap-2 group"
+                    >
+                        View All Events
+                        <ArrowRight className="w-5 h-5 transition-transform duration-300 group-hover:translate-x-1" />
+                    </Button>
+                </motion.div>
             </div>
 
-            {/* Events Table Section with Skeleton Loading */}
-            <div className="relative z-10 mt-16 w-full flex justify-center">
-                <div className="max-w-screen-lg w-[90%] md:w-[80%] lg:w-[70%]">
-                    <h2 className="text-gray-300 text-left font-medium text-md sm:text-xl mb-4 ml-2 sm:ml-0">
-                        Upcoming Events
-                    </h2>
-                    {loading ? (
-                        <EventTableSkeleton />
-                    ) : (
-                        <EventsTable events={upcomingEvents} />
-                    )}
-                </div>
+            {/* Upcoming Events Section: Ensure it's also constrained */}
+            <div className="relative z-10 w-full flex flex-col items-center max-w-screen-xl mt-4 md:mt-6">
+                <motion.h2
+                    className="text-gray-100 text-2xl sm:text-3xl font-semibold mb-6 sm:mb-8"
+                    variants={fadeInVariants}
+                    initial="hidden"
+                    whileInView="visible"
+                    viewport={{ once: true, amount: 0.5 }}
+                    custom={0} 
+                >
+                    Upcoming Events
+                </motion.h2>
+
+                {error && (
+                    <div className="bg-red-500/20 border border-red-500/50 text-red-300 px-4 py-3 rounded-md text-center w-full max-w-lg mx-auto"> {/* Constrain width */}
+                        {error}
+                    </div>
+                )}
+                {loading && !error && (
+                    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 w-full px-4">
+                        {[...Array(3)].map((_, i) => <EventCardSkeleton key={i} />)}
+                    </div>
+                )}
+                {!loading && !error && upcomingEvents.length > 0 && (
+                    // The grid itself should be constrained by its parent max-w-screen-xl
+                    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 w-full px-4">
+                        {upcomingEvents.map((event, index) => (
+                            <motion.div
+                                key={event.id}
+                                variants={fadeInVariants}
+                                initial="hidden"
+                                whileInView="visible"
+                                viewport={{ once: true, amount: 0.2 }}
+                                custom={index * 0.5 + 0.2} // Offset custom delay slightly from H2
+                            >
+                                <EventCard event={event} onOpenDialog={openEventDialog} />
+                            </motion.div>
+                        ))}
+                    </div>
+                )}
+                 {!loading && !error && upcomingEvents.length === 0 && (
+                     <div className="text-center py-10 px-4 w-full max-w-lg mx-auto"> {/* Constrain width */}
+                        <svg className="mx-auto h-12 w-12 text-gray-500" fill="none" viewBox="0 0 24 24" stroke="currentColor" aria-hidden="true" >
+                            <path vectorEffect="non-scaling-stroke" strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
+                        </svg>
+                        <h3 className="mt-2 text-xl font-medium text-gray-200">No Upcoming Events</h3>
+                        <p className="mt-1 text-sm text-gray-400">It looks like things are quiet for now. Check back soon!</p>
+                    </div>
+                )}
             </div>
+            
+            <EventDialog
+                isOpen={isDialogOpen}
+                onOpenChange={setIsDialogOpen}
+                event={selectedEventForDialog}
+            />
         </section>
     );
 }

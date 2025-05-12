@@ -19,8 +19,6 @@ const FullScreenBackground: React.FC<Props> = ({
 }) => {
     return (
         <div className="fixed inset-0 -z-10 overflow-hidden">
-            {" "}
-            {/* Added -z-10 to ensure it's behind everything */}
             <div className="absolute inset-0 overflow-hidden">
                 <div
                     className={`absolute inset-0 bg-cover bg-center bg-no-repeat opacity-40 sm:opacity-30 ${
@@ -36,7 +34,7 @@ const FullScreenBackground: React.FC<Props> = ({
                     <div className="absolute inset-0 bg-gradient-to-br from-indigo-600 via-purple-600 to-pink-600 opacity-25 mix-blend-overlay animate-gradient-slow"></div>
                 )}
                 {/* Consistent bottom gradient - ensure this provides enough contrast for text near bottom if navbar isn't always opaque */}
-                <div className="absolute inset-0 bg-gradient-to-b from-transparent via-transparent to-black/70"></div>{" "}
+                <div className="absolute inset-0 bg-gradient-to-b from-transparent via-black/5  0 to-black/70"></div>{" "}
                 {/* Made bottom gradient slightly more opaque */}
             </div>
         </div>

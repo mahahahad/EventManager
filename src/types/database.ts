@@ -1,28 +1,35 @@
-// In a types file, e.g., src/types/index.ts or src/types/database.ts
+// src/types/database.ts
 
 export interface UserProfile {
-    // ... (rest of UserProfile)
-    id: string; // UUID
-    display_name: string | null;
-    email: string; // Assuming email is present
-    is_admin: boolean;
-    created_at?: string; // ISO date string
-    updated_at?: string; // ISO date string
+    id: string; // UUID from your public 'users' table
+    full_name: string | null; // Added from your 'users' table schema
+    email: string; // Assuming this is from 'users' table, matches schema
+    display_name: string | null; // From your 'users' table schema
+    is_admin: boolean; // From your 'users' table schema
+    // 'created_at' and 'updated_at' are typically on auth.users, not usually duplicated
+    // on a public 'users' profile table unless you explicitly manage them there.
+    // Removed them to align with the 'users' table schema provided.
 }
 
 export interface Tag {
-    // ... (rest of Tag)
     id: string; // UUID
     name: string;
-    created_at?: string; // ISO date string
+    created_at?: string; // ISO date string, timestamptz from schema
 }
 
+/**
+ * Represents a row from the 'event_tags' join table,
+ * where the related 'tags' data is also fetched.
+ * This type is suitable if you query 'event_tags' directly and join 'tags',
+ * e.g., supabase.from('event_tags').select('*, tags!inner(*)')
+ */
 export interface EventTagLinkRaw {
-    // ... (rest of EventTagLinkRaw)
     event_id: string; // UUID
     tag_id: string; // UUID
-    tags: Tag; 
+    assigned_at: string; // timestamptz from your 'event_tags' schema
+    tags: Tag; // The full related Tag object
 }
+
 
 export interface Event {
     id: string; // UUID
@@ -31,37 +38,55 @@ export interface Event {
     start_time: string; // ISO date string
     end_time: string | null; // ISO date string
     location: string | null;
-    image_url: string | null;   // <<< ADDED THIS LINE (make it optional if it can be null in DB)
-    external_id: string | null;
+    image_url: string | null;
+    external_id: number | null; // Changed from string to number to match int4 in schema
     source: string | null;
-    is_public: boolean;         // <<< ADDED THIS LINE (type should match your DB column)
+    is_public: boolean;
     created_by: string | null; // UUID of user
     created_at?: string; // ISO date string
     updated_at?: string; // ISO date string
 
-    // For related data after processing Supabase joins (as used on Dashboard):
-    tags?: string[]; // Array of tag names, processed from event_tags
+    /**
+     * Raw structure from Supabase when fetching events with nested tags
+     * using a query like: .select('*, event_tags(tags(name))')
+     * Each item in the array corresponds to an entry in the 'event_tags' join table
+     * for this event, with the specified nested 'tags' data.
+     */
+    event_tags?: Array<{
+        // If you query `event_tags(assigned_at, tags(name))`, you'd add:
+        // assigned_at?: string;
+
+        tags: { // Represents the 'tags' table data
+            name: string | null;
+            // If you query `tags(id, name)`, you'd add:
+            // id?: string;
+        } | null; // The 'tags' object could be null if RLS prevents access or join fails
+    }>;
+
+    /**
+     * For related data after processing Supabase joins (e.g., in application logic).
+     * This is an array of tag names, processed from the raw 'event_tags' structure.
+     */
+    tags?: string[];
 }
 
 export interface EventRegistration {
-    // ... (rest of EventRegistration)
-    id: string; 
-    user_id: string; 
-    event_id: string; 
-    registration_time: string; 
-    attended: boolean | null;
-    event?: Event;
+    id: string; // uuid from schema
+    user_id: string; // uuid from schema
+    event_id: string; // uuid from schema
+    registration_time: string; // timestamptz from schema
+    attended: boolean | null; // bool from schema
+    event?: Event; // Optional joined event data
 }
 
 export interface UserEventRating {
-    // ... (rest of UserEventRating)
-    id: string; 
-    user_id: string; 
-    event_id: string; 
-    rating: number; 
-    comment: string | undefined; // Consider string | null if your DB stores NULL for empty comments
-    rated_at: string; 
-    event?: Event;
+    id: string; // uuid from schema
+    user_id: string; // uuid from schema
+    event_id: string; // uuid from schema
+    rating: number; // int4 from schema
+    comment: string | null; // text from schema, changed from string | undefined
+    rated_at: string; // timestamptz from schema
+    event?: Event; // Optional joined event data
 }
 
 // For your DashboardPage component states:

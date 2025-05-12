@@ -4,34 +4,31 @@
 import React, { useEffect, useState } from "react";
 import { supabase } from "@/lib/supabaseClient";
 import { useParams, useRouter } from "next/navigation";
-import { Event as EventType } from "@/types/database";
+import { Event as EventType } from "@/types/database"; // Ensure EventType includes event_tags
 import { Button } from "@/components/ui/button";
 import FullScreenBackground from "@/components/FullScreenBackground";
-import { IoArrowBack } from "react-icons/io5"; // Using react-icons for Back button
+import { IoArrowBack } from "react-icons/io5";
 import {
     CalendarDays,
     Clock,
     MapPin,
     Info,
-    Link2,
     Users,
-    // Image as ImageIcon, // Can remove if not used directly
-    // CheckCircle2, // From previous versions, can remove if not used
-    XCircle, // For error state
+    Tag as TagIcon, // Added for tags
+    XCircle,
     Loader2,
     LogIn,
     UserCheck,
     UserX,
-    ExternalLink as ExternalLinkIcon, // For external links in footer
+    ExternalLink as ExternalLinkIcon,
 } from "lucide-react";
 import { motion } from "framer-motion";
 
-// cn utility (ensure it's defined or imported if used elsewhere, or define locally)
-function cn(...classes: string[]) {
-    return classes.filter(Boolean).join(" ");
-}
+// cn utility (if not globally available)
+// function cn(...classes: string[]) {
+//     return classes.filter(Boolean).join(" ");
+// }
 
-// Re-using DialogDetailItem structure for consistency
 const EventPageDetailItem = ({
     icon: Icon,
     label,
@@ -44,9 +41,12 @@ const EventPageDetailItem = ({
     children?: React.ReactNode;
 }) => (
     <div className="flex items-start space-x-3">
-        <Icon className="w-4 h-4 text-sky-400 mt-1 flex-shrink-0 opacity-80" />
+        <Icon className="w-5 h-5 text-sky-400 mt-1 flex-shrink-0 opacity-90" />{" "}
+        {/* Slightly larger icon */}
         <div>
-            <span className="font-medium text-gray-400 text-xs uppercase tracking-wider">
+            <span className="font-semibold text-gray-300 text-xs uppercase tracking-wider">
+                {" "}
+                {/* Slightly bolder label */}
                 {label}
             </span>
             {value && (
@@ -63,43 +63,48 @@ const EventPageDetailItem = ({
     </div>
 );
 
-// Skeleton Loader for Event Detail Page - Updated for consistency
 const EventDetailSkeleton = () => (
     <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60">
-        <div className="absolute top-6 left-6">
-            <div className="h-10 w-24 bg-gray-700/50 animate-pulse rounded-full" />{" "}
+        <div className="absolute top-5 left-5 sm:top-6 sm:left-6">
+            <div className="h-10 w-10 bg-gray-700/50 animate-pulse rounded-full" />{" "}
             {/* Back button placeholder */}
         </div>
-        <div className="relative bg-black/70 backdrop-blur-2xl shadow-2xl rounded-3xl w-[90%] sm:w-[80%] md:w-[70%] lg:max-w-3xl max-h-[90vh] p-0 border border-gray-700/60 flex flex-col">
-            {/* Image Placeholder */}
-            <div className="w-full h-48 sm:h-60 md:h-64 bg-gray-700/40 animate-pulse rounded-t-3xl flex-shrink-0"></div>
-
-            {/* Content Placeholder */}
+        <div className="relative bg-black/50 backdrop-blur-xl shadow-2xl rounded-3xl w-[90%] sm:w-[80%] md:w-[70%] lg:max-w-4xl max-h-[90vh] p-0 border border-gray-700/50 flex flex-col">
+            <div className="w-full h-48 sm:h-60 md:h-72 bg-gray-700/40 animate-pulse rounded-t-3xl flex-shrink-0"></div>
             <div className="p-6 sm:p-8 flex-grow space-y-6 animate-pulse">
-                <div className="h-10 w-3/4 bg-gray-600/50 rounded-lg"></div>{" "}
+                <div className="h-10 w-3/4 bg-gray-600/50 rounded-lg mb-4"></div>{" "}
                 {/* Title */}
-                <div className="space-y-4">
-                    <div className="h-6 w-1/2 bg-gray-600/50 rounded"></div>{" "}
-                    {/* Detail Item */}
-                    <div className="h-6 w-2/3 bg-gray-600/50 rounded"></div>{" "}
-                    {/* Detail Item */}
-                    <div className="h-6 w-1/2 bg-gray-600/50 rounded"></div>{" "}
-                    {/* Detail Item */}
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-x-6 gap-y-5">
+                    {" "}
+                    {/* For metadata */}
+                    {[...Array(4)].map(
+                        (
+                            _,
+                            i // Assuming up to 4 metadata items (date, time, loc, tags)
+                        ) => (
+                            <div key={i} className="space-y-1">
+                                <div className="h-4 w-1/3 bg-gray-600/40 rounded"></div>{" "}
+                                {/* Label */}
+                                <div className="h-5 w-2/3 bg-gray-600/50 rounded"></div>{" "}
+                                {/* Value */}
+                            </div>
+                        )
+                    )}
                 </div>
-                <div className="h-8 w-1/3 bg-gray-600/50 rounded-lg mt-2"></div>{" "}
+                <div className="h-6 w-1/3 bg-gray-600/50 rounded-lg mt-4"></div>{" "}
                 {/* Description Title */}
-                <div className="space-y-2">
+                <div className="space-y-2 mt-1">
                     <div className="h-4 w-full bg-gray-600/50 rounded"></div>
                     <div className="h-4 w-full bg-gray-600/50 rounded"></div>
                     <div className="h-4 w-5/6 bg-gray-600/50 rounded"></div>
                 </div>
             </div>
-
-            {/* Footer Placeholder */}
-            <div className="px-6 py-4 bg-black/50 flex-shrink-0 rounded-b-3xl border-t border-gray-700/70">
+            <div className="px-6 py-4 bg-black/40 flex-shrink-0 rounded-b-3xl">
+                {" "}
+                {/* Footer, no border-t */}
                 <div className="flex flex-col sm:flex-row sm:justify-end gap-3 w-full">
-                    <div className="h-10 w-full sm:w-32 bg-gray-600/50 animate-pulse rounded-full"></div>
-                    <div className="h-10 w-full sm:w-36 bg-gray-600/50 animate-pulse rounded-full"></div>
+                    <div className="h-12 w-full sm:w-36 bg-gray-600/50 animate-pulse rounded-full"></div>
+                    <div className="h-12 w-full sm:w-40 bg-gray-600/50 animate-pulse rounded-full"></div>
                 </div>
             </div>
         </div>
@@ -109,6 +114,7 @@ const EventDetailSkeleton = () => (
 export default function EventDetailPage() {
     const [event, setEvent] = useState<EventType | null>(null);
     const [loading, setLoading] = useState(true);
+    // ... (other states: error, isRegistered, registrationId, isRegistering, isUnregistering, userId)
     const [error, setError] = useState<string | null>(null);
     const [isRegistered, setIsRegistered] = useState(false);
     const [registrationId, setRegistrationId] = useState<string | null>(null);
@@ -121,10 +127,11 @@ export default function EventDetailPage() {
 
     useEffect(() => {
         const getCurrentUser = async () => {
+            /* ... same ... */
             const {
                 data: { user },
             } = await supabase.auth.getUser();
-            setUserId(user ? user.id : null); // Set to null if no user
+            setUserId(user ? user.id : null);
         };
         getCurrentUser();
     }, []);
@@ -132,34 +139,36 @@ export default function EventDetailPage() {
     useEffect(() => {
         const fetchEventAndRegistrationStatus = async () => {
             if (!eventId) {
+                /* ... same error handling ... */
                 setError("Invalid event ID.");
                 setLoading(false);
                 return;
             }
-
-            // Don't set loading to true if userId is still undefined (initial load)
-            // This avoids a flash of skeleton if user loads quickly
-            if (userId !== undefined) setLoading(true);
+            if (userId !== undefined) setLoading(true); // Only set loading if userId is determined
             setError(null);
 
+            // Fetch event including event_tags and nested tags
             const { data: eventData, error: eventError } = await supabase
                 .from("events")
-                .select("*")
+                .select("*, event_tags(tags(name))") // Ensure tags are fetched
                 .eq("id", eventId)
                 .single();
 
             if (eventError) {
+                /* ... same event error handling ... */
                 console.error("Error fetching event:", eventError);
                 setError("Failed to fetch event details.");
                 setEvent(null);
             } else if (eventData) {
-                setEvent(eventData as EventType);
+                setEvent(eventData as EventType); // Type assertion
             } else {
                 setError("Event not found.");
                 setEvent(null);
             }
 
+            // Registration status check
             if (userId && eventData) {
+                /* ... same registration check ... */
                 const { data: regData, error: regError } = await supabase
                     .from("event_registrations")
                     .select("id")
@@ -182,11 +191,11 @@ export default function EventDetailPage() {
             setLoading(false);
         };
 
-        // Fetch when eventId is present AND (userId is determined OR it's the initial load without userId yet)
-        if (eventId && (userId !== undefined || !loading)) {
+        if (eventId && userId !== undefined) {
+            // Fetch only when both eventId and userId status are known
             fetchEventAndRegistrationStatus();
         }
-    }, [eventId, userId]); // Removed `loading` from deps to avoid re-fetch loops
+    }, [eventId, userId]);
 
     const handleGoBack = () => router.back();
 
@@ -194,6 +203,7 @@ export default function EventDetailPage() {
         dateString: string | null | undefined,
         options?: Intl.DateTimeFormatOptions
     ) => {
+        /* ... same ... */
         if (!dateString) return "N/A";
         const defaultOptions: Intl.DateTimeFormatOptions = {
             year: "numeric",
@@ -201,20 +211,22 @@ export default function EventDetailPage() {
             day: "numeric",
             hour: "2-digit",
             minute: "2-digit",
-            hour12: true, // Default to 12-hour format
-            timeZone: "Asia/Dubai", // Consider making this dynamic or user-configurable
+            hour12: true,
+            // timeZone: "Asia/Dubai", // Consider removing or making configurable
             ...options,
         };
         try {
-            return new Date(dateString).toLocaleString("en-US", defaultOptions);
+            return new Date(dateString).toLocaleString(
+                undefined,
+                defaultOptions
+            ); // Use undefined for user's locale
         } catch (e) {
-            // en-US for common format, or undefined for locale
             return "Invalid Date";
         }
     };
 
     const handleRegister = async () => {
-        /* ... (remains the same, ensure buttons inside are rounded-full) ... */
+        /* ... same logic ... */
         if (!userId) {
             router.push(`/login?redirect=/events/${eventId}`);
             return;
@@ -236,7 +248,7 @@ export default function EventDetailPage() {
         setIsRegistering(false);
     };
     const handleUnregister = async () => {
-        /* ... (remains the same, ensure buttons inside are rounded-full) ... */
+        /* ... same logic ... */
         if (!userId || !event || !isRegistered || !registrationId) return;
         setIsUnregistering(true);
         const { error: unregError } = await supabase
@@ -257,8 +269,8 @@ export default function EventDetailPage() {
     if (loading && !event) return <EventDetailSkeleton />;
 
     if (error && !event) {
-        /* ... (error display remains the same, ensure buttons rounded-full) ... */
         return (
+            /* ... same error display structure ... */
             <div className="fixed inset-0 z-50 flex flex-col items-center justify-center p-4 text-white bg-black/70">
                 <FullScreenBackground
                     darkOverlay
@@ -272,10 +284,10 @@ export default function EventDetailPage() {
                     <Button
                         onClick={handleGoBack}
                         variant="outline"
-                        className="text-white border-white hover:bg-white/10 rounded-full"
+                        className="text-white border-white hover:bg-white/10 !p-5 rounded-full"
                     >
                         {" "}
-                        {/* rounded-full */}
+                        {/* !p-5 rounded-full */}
                         <IoArrowBack
                             size={20}
                             className="inline-block mr-2"
@@ -288,8 +300,8 @@ export default function EventDetailPage() {
     }
 
     if (!event) {
-        /* ... (not found display, ensure buttons rounded-full) ... */
         return (
+            /* ... same "Event Not Found" display structure ... */
             <div className="fixed inset-0 z-50 flex flex-col items-center justify-center p-4 text-white bg-black/70">
                 <FullScreenBackground
                     darkOverlay
@@ -308,10 +320,10 @@ export default function EventDetailPage() {
                     <Button
                         onClick={handleGoBack}
                         variant="outline"
-                        className="text-white border-white hover:bg-white/10 rounded-full"
+                        className="text-white border-white hover:bg-white/10 !p-5 rounded-full"
                     >
                         {" "}
-                        {/* rounded-full */}
+                        {/* !p-5 rounded-full */}
                         <IoArrowBack
                             size={20}
                             className="inline-block mr-2"
@@ -325,41 +337,30 @@ export default function EventDetailPage() {
 
     return (
         <div className="fixed inset-0 z-40 flex items-center justify-center p-2 sm:p-4">
-            {" "}
-            {/* Main container for modal-like page */}
-            <FullScreenBackground
-                darkOverlay
-                blur
-                imageUrl={
-                    event.image_url ||
-                    "https://images.unsplash.com/photo-1501281668745-f7f57925c3b4?q=80&w=1920&auto=format&fit=crop&ixlib=rb-4.0.3&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D"
-                }
-            />
+            <FullScreenBackground />
             <Button
                 onClick={handleGoBack}
                 variant="ghost"
                 size="icon"
-                className="fixed top-5 left-5 sm:top-6 sm:left-6 z-50 h-10 w-10 bg-black/50 hover:bg-black/70 text-white rounded-full backdrop-blur-sm border border-white/20 hover:border-white/40"
+                className="fixed top-5 left-5 sm:top-6 sm:left-6 z-50 h-11 w-11 bg-black/50 hover:bg-black/70 text-white rounded-full backdrop-blur-sm border border-white/20 hover:border-white/40 flex items-center justify-center" // Ensure icon centered, adjusted size
                 aria-label="Go back"
             >
-                <IoArrowBack size={20} />
+                <IoArrowBack size={22} />
             </Button>
-            {/* Main Event Detail Card - Styled like the Info Dialog */}
-            <motion.div // Added motion for subtle entrance
-                initial={{ opacity: 0, scale: 0.98, y: 10 }}
+
+            <motion.div
+                initial={{ opacity: 0, scale: 0.95, y: 20 }}
                 animate={{ opacity: 1, scale: 1, y: 0 }}
                 transition={{
                     type: "spring",
                     stiffness: 260,
                     damping: 25,
-                    duration: 0.3,
+                    duration: 0.4,
                 }}
-                className="relative bg-black/70 backdrop-blur-2xl shadow-2xl rounded-3xl w-[95%] sm:w-[90%] md:w-[80%] lg:max-w-4xl max-h-[90vh] overflow-hidden flex flex-col border border-gray-700/60"
+                className="relative bg-black/50 backdrop-blur-xl shadow-2xl rounded-3xl w-[95%] sm:w-[90%] md:w-[80%] lg:max-w-4xl max-h-[90vh] overflow-hidden flex flex-col border border-gray-700/50" // Main card style
             >
                 {event.image_url && (
                     <div className="w-full h-48 sm:h-60 md:h-72 overflow-hidden flex-shrink-0 rounded-t-3xl">
-                        {" "}
-                        {/* Match parent rounding */}
                         <img
                             src={event.image_url}
                             alt={event.title || "Event image"}
@@ -368,7 +369,6 @@ export default function EventDetailPage() {
                     </div>
                 )}
 
-                {/* Header part (Title and Metadata) - Not scrollable */}
                 <div
                     className={`px-6 pt-6 sm:px-8 sm:pt-8 pb-4 flex-shrink-0 ${
                         !event.image_url ? "rounded-t-3xl" : ""
@@ -404,10 +404,27 @@ export default function EventDetailPage() {
                                     : "Private Event"
                             }
                         />
+
+                        {/* Display Tags */}
+                        {event.event_tags && event.event_tags.length > 0 && (
+                            <EventPageDetailItem icon={TagIcon} label="Tags">
+                                <div className="flex flex-wrap gap-1.5 mt-1">
+                                    {event.event_tags.map((et, index) =>
+                                        et.tags && et.tags.name ? (
+                                            <span
+                                                key={index}
+                                                className="text-xs bg-purple-600/40 text-purple-200 px-2.5 py-1 rounded-full"
+                                            >
+                                                {et.tags.name}
+                                            </span>
+                                        ) : null
+                                    )}
+                                </div>
+                            </EventPageDetailItem>
+                        )}
                     </div>
                 </div>
 
-                {/* Scrollable Description Area */}
                 {event.description && (
                     <div className="px-6 sm:px-8 pb-6 flex-grow overflow-y-auto custom-scrollbar-thin">
                         <h2 className="text-xl font-semibold text-sky-300 mb-2 mt-2">
@@ -418,29 +435,39 @@ export default function EventDetailPage() {
                         </p>
                     </div>
                 )}
-                {!event.description && (
-                    <div className="px-6 sm:px-8 pb-6 flex-grow flex items-center justify-center">
-                        <p className="text-gray-400 italic">
-                            No detailed description available for this event.
-                        </p>
-                    </div>
-                )}
+                {!event.description && "No descrpition provided."}
 
-                {/* Action Buttons Footer */}
-                <div className="px-6 py-4 bg-black/50 flex-shrink-0 rounded-b-3xl border-t border-gray-700/70">
+                <div className="px-6 py-4 bg-black/40 backdrop-blur-sm flex-shrink-0 rounded-b-3xl">
                     {" "}
-                    {/* Match parent rounding, ADDED border-t back for separation */}
+                    {/* Removed border-t */}
                     <div className="flex flex-col sm:flex-row sm:items-center sm:justify-end gap-3">
+                        {/* Intra Link Button - Added Here */}
+                        {event.external_id && event.source === "intra_42" && (
+                            <Button // No extra characters around this or its child
+                                asChild
+                                className="w-full sm:w-auto !p-6 bg-cyan-600 hover:bg-cyan-500 text-white rounded-full"
+                            >
+                                <a // Single direct child
+                                    href={`https://intra.42.fr/events/${event.external_id}`}
+                                    target="_blank"
+                                    rel="noopener noreferrer"
+                                    className="flex items-center justify-center gap-1.5"
+                                >
+                                    View on Intra <ExternalLinkIcon size={16} />
+                                </a>
+                            </Button>
+                        )}
+
                         {userId ? (
                             isRegistered ? (
                                 <>
                                     <Button
                                         variant="outline"
-                                        className="w-full sm:w-auto p-4 text-green-400 border-green-400 hover:bg-green-400/10 cursor-default flex items-center justify-center rounded-full"
+                                        className="w-full sm:w-auto !p-6 text-green-400 border-green-400 hover:bg-green-400/10 cursor-default flex items-center justify-center rounded-full"
                                         disabled
                                     >
                                         {" "}
-                                        {/* rounded-full */}
+                                        {/* !p-4 rounded-full */}
                                         <UserCheck className="w-5 h-5 mr-2" />{" "}
                                         Registered
                                     </Button>
@@ -451,7 +478,7 @@ export default function EventDetailPage() {
                                         className="w-full sm:w-auto !p-6 flex items-center justify-center rounded-full"
                                     >
                                         {" "}
-                                        {/* rounded-full */}
+                                        {/* !p-5 rounded-full */}
                                         {isUnregistering ? (
                                             <Loader2 className="w-5 h-5 mr-2 animate-spin" />
                                         ) : (
@@ -469,7 +496,7 @@ export default function EventDetailPage() {
                                     className="w-full sm:w-auto !p-6 bg-blue-600 hover:bg-blue-500 text-white flex items-center justify-center rounded-full"
                                 >
                                     {" "}
-                                    {/* rounded-full */}
+                                    {/* !p-6 rounded-full */}
                                     {isRegistering ? (
                                         <Loader2 className="w-5 h-5 mr-2 animate-spin" />
                                     ) : (
@@ -490,7 +517,7 @@ export default function EventDetailPage() {
                                 className="w-full sm:w-auto bg-gray-500 !p-6 hover:bg-gray-400 text-white flex items-center justify-center rounded-full"
                             >
                                 {" "}
-                                {/* rounded-full */}
+                                {/* !p-6 rounded-full */}
                                 <LogIn className="w-5 h-5 mr-2" /> Log In to
                                 Register
                             </Button>
