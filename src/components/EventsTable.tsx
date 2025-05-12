@@ -1,14 +1,15 @@
 // components/EventsTable.tsx
 "use client";
 
-import { useState, useMemo } from "react";
+import { useState, useMemo, useEffect } from "react";
 import { Event as EventData } from "@/types/database";
 import { Button } from "@/components/ui/button"; // shadcn/ui Button
 import { motion } from "framer-motion";
 import { Info, ArrowUpDown } from "lucide-react";
 import EventDialog from "@/components/EventDialog";
+import { supabase } from "@/lib/supabaseClient";
 
-interface Props { // Assuming Props interface is defined elsewhere or should be defined here
+interface Props {
     events: EventData[];
 }
 
@@ -62,8 +63,8 @@ const ColumnHeader: React.FC<ColumnHeaderProps> = ({
     );
 };
 
-
-export default function EventsTable({ events }: Props) {
+export default function EventsTable({ events: initialEvents }: Props) {
+    const [events, setEvents] = useState<EventData[]>(initialEvents);
     const [selectedEventForDialog, setSelectedEventForDialog] = useState<EventData | null>(null);
     const [isDialogOpen, setIsDialogOpen] = useState(false);
     const [sortConfig, setSortConfig] = useState<{ key: keyof EventData; direction: "ascending" | "descending"; } | null>({ key: "start_time", direction: "descending" });
@@ -98,7 +99,7 @@ export default function EventsTable({ events }: Props) {
         }
         return sortableItems;
     }, [events, sortConfig]);
-    
+
     const requestSort = (key: keyof EventData) => {
         let direction: "ascending" | "descending" = "descending";
         if (sortConfig && sortConfig.key === key && sortConfig.direction === "descending") {
@@ -108,6 +109,37 @@ export default function EventsTable({ events }: Props) {
         }
         setSortConfig({ key, direction });
     };
+
+    useEffect(() => {
+        const channel = supabase
+            .channel("realtime-events-table")
+            .on(
+                "postgres_changes",
+                { event: "*", schema: "public", table: "events" },
+                (payload) => {
+                    if (payload.eventType === "INSERT") {
+                        setEvents((prev) => [...prev, payload.new as EventData]);
+                    } else if (payload.eventType === "UPDATE") {
+                        setEvents((prev) =>
+                            prev.map((ev) =>
+                                ev.id === (payload.new as EventData).id
+                                    ? (payload.new as EventData)
+                                    : ev
+                            )
+                        );
+                    } else if (payload.eventType === "DELETE") {
+                        setEvents((prev) =>
+                            prev.filter((ev) => ev.id !== (payload.old as EventData).id)
+                        );
+                    }
+                }
+            )
+            .subscribe();
+
+        return () => {
+            supabase.removeChannel(channel);
+        };
+    }, []);
 
     if (events.length === 0) {
         return (
@@ -155,8 +187,8 @@ export default function EventsTable({ events }: Props) {
                             <td className="px-6 py-3.5 text-center">
                                 <Button
                                     variant="ghost"
-                                    size="icon" // This usually controls padding for icon buttons
-                                    className="h-9 w-9 text-gray-400 hover:text-sky-300 hover:bg-sky-700/30 rounded-full transition-all" // Kept rounded-full, size="icon" handles padding
+                                    size="icon"
+                                    className="h-9 w-9 text-gray-400 hover:text-sky-300 hover:bg-sky-700/30 rounded-full transition-all"
                                     onClick={() => openEventDialog(event)}
                                     aria-label="View event quick details"
                                 >

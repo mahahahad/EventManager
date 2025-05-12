@@ -1,7 +1,6 @@
-// src/app/admin/events/page.tsx
 "use client";
 
-import React, { useEffect, useState, useMemo } from "react"; // Ensured useMemo is imported
+import React, { useEffect, useState, useMemo } from "react";
 import { supabase } from "@/lib/supabaseClient";
 import Link from "next/link";
 import AdminNavbar from "@/components/AdminNavbar";
@@ -106,8 +105,6 @@ export default function AdminEventsPage() {
     const [selectedEvents, setSelectedEvents] = useState<string[]>([]);
     const [isBulkDeleting, setIsBulkDeleting] = useState(false);
     const [searchQuery, setSearchQuery] = useState("");
-    // filteredEvents state can be removed if sortedFilteredEvents is used for everything
-    // const [filteredEvents, setFilteredEvents] = useState<EventData[]>([]);
     const [sortConfig, setSortConfig] = useState<{
         key: keyof EventData;
         direction: "ascending" | "descending";
@@ -130,78 +127,78 @@ export default function AdminEventsPage() {
     useEffect(() => {
         setLoading(true);
         fetchEvents().finally(() => setLoading(false));
+
+        const channel = supabase
+            .channel("events-updates")
+            .on(
+                "postgres_changes",
+                { event: "*", schema: "public", table: "events" },
+                (payload) => {
+                    fetchEvents();
+                }
+            )
+            .subscribe();
+
+        return () => {
+            supabase.removeChannel(channel);
+        };
     }, []);
 
     const sortedFilteredEvents = useMemo(() => {
         let itemsToProcess: EventData[] = [...events];
         if (searchQuery) {
             const lowercasedQuery = searchQuery.toLowerCase();
-            itemsToProcess = itemsToProcess.filter(
-                (
-                    event: EventData // Typed event
-                ) =>
-                    event.title?.toLowerCase().includes(lowercasedQuery) ||
-                    event.location?.toLowerCase().includes(lowercasedQuery) ||
-                    event.description
-                        ?.toLowerCase()
-                        .includes(lowercasedQuery) ||
-                    String(event.id).toLowerCase().includes(lowercasedQuery)
+            itemsToProcess = itemsToProcess.filter((event) =>
+                [
+                    event.title,
+                    event.location,
+                    event.description,
+                    String(event.id),
+                ]
+                    .filter(Boolean)
+                    .some((field) =>
+                        field!.toLowerCase().includes(lowercasedQuery)
+                    )
             );
         }
 
         if (sortConfig !== null) {
-            itemsToProcess.sort((a: EventData, b: EventData) => {
-                // Typed a and b
-                const valA_orig = a[sortConfig.key];
-                const valB_orig = b[sortConfig.key];
+            itemsToProcess.sort((a, b) => {
+                const valA = a[sortConfig.key];
+                const valB = b[sortConfig.key];
+
                 if (
                     sortConfig.key === "start_time" ||
                     sortConfig.key === "end_time"
                 ) {
-                    const dateA = valA_orig
-                        ? new Date(valA_orig as string).getTime()
-                        : 0;
-                    const dateB = valB_orig
-                        ? new Date(valB_orig as string).getTime()
-                        : 0;
-                    if (dateA < dateB)
-                        return sortConfig.direction === "ascending" ? -1 : 1;
-                    if (dateA > dateB)
-                        return sortConfig.direction === "ascending" ? 1 : -1;
-                    return 0;
+                    const dateA = valA ? new Date(valA as string).getTime() : 0;
+                    const dateB = valB ? new Date(valB as string).getTime() : 0;
+                    return sortConfig.direction === "ascending"
+                        ? dateA - dateB
+                        : dateB - dateA;
                 }
-                let valA_str = String(valA_orig ?? "").toLowerCase();
-                let valB_str = String(valB_orig ?? "").toLowerCase();
-                if (valA_str < valB_str)
-                    return sortConfig.direction === "ascending" ? -1 : 1;
-                if (valA_str > valB_str)
-                    return sortConfig.direction === "ascending" ? 1 : -1;
-                return 0;
+
+                const valA_str = String(valA ?? "").toLowerCase();
+                const valB_str = String(valB ?? "").toLowerCase();
+
+                return sortConfig.direction === "ascending"
+                    ? valA_str.localeCompare(valB_str)
+                    : valB_str.localeCompare(valA_str);
             });
         }
         return itemsToProcess;
     }, [searchQuery, events, sortConfig]);
 
-    // Reset selected events when the list of displayed events changes
     useEffect(() => {
         setSelectedEvents([]);
     }, [sortedFilteredEvents]);
 
     const requestSortAdmin = (key: keyof EventData) => {
-        let direction: "ascending" | "descending" = "descending";
-        if (
-            sortConfig &&
-            sortConfig.key === key &&
-            sortConfig.direction === "descending"
-        ) {
-            direction = "ascending";
-        } else if (
-            sortConfig &&
-            sortConfig.key === key &&
-            sortConfig.direction === "ascending"
-        ) {
-            direction = "descending";
-        }
+        const isSameKey = sortConfig?.key === key;
+        const direction =
+            isSameKey && sortConfig?.direction === "ascending"
+                ? "descending"
+                : "ascending";
         setSortConfig({ key, direction });
     };
 
@@ -219,303 +216,264 @@ export default function AdminEventsPage() {
         );
     };
 
-    const isAllFilteredSelected =
-        sortedFilteredEvents.length > 0 &&
-        selectedEvents.length === sortedFilteredEvents.length;
-
     const handleBulkDelete = async () => {
-        /* ... (same) ... */
-        if (selectedEvents.length === 0) {
-            alert("Please select events to delete.");
-            return;
-        }
+        if (selectedEvents.length === 0)
+            return alert("Please select events to delete.");
         if (
-            confirm(
+            !confirm(
                 `Are you sure you want to delete ${selectedEvents.length} selected events?`
             )
-        ) {
-            setIsBulkDeleting(true);
-            setError(null);
-            const { error: deleteError } = await supabase
-                .from("events")
-                .delete()
-                .in("id", selectedEvents);
-            if (deleteError) {
-                setError("Failed to delete selected events.");
-                alert("Failed to delete selected events.");
-            } else {
-                setSelectedEvents([]);
-                await fetchEvents();
-                alert("Selected events deleted successfully!");
-            }
-            setIsBulkDeleting(false);
+        )
+            return;
+
+        setIsBulkDeleting(true);
+        setError(null);
+        const { error: deleteError } = await supabase
+            .from("events")
+            .delete()
+            .in("id", selectedEvents);
+        if (deleteError) {
+            setError("Failed to delete selected events.");
+            alert("Failed to delete selected events.");
+        } else {
+            setSelectedEvents([]);
+            await fetchEvents();
+            alert("Selected events deleted successfully!");
         }
+        setIsBulkDeleting(false);
     };
+
     const handleDeleteEvent = async (id: string, title: string) => {
-        /* ... (same) ... */
-        if (confirm(`Are you sure you want to delete the event "${title}"?`)) {
-            const { error: deleteError } = await supabase
-                .from("events")
-                .delete()
-                .eq("id", id);
-            if (deleteError) {
-                alert(`Failed to delete event: ${deleteError.message}`);
-            } else {
-                await fetchEvents();
-                alert("Event deleted successfully!");
-            }
+        if (!confirm(`Are you sure you want to delete the event \"${title}\"?`))
+            return;
+        const { error: deleteError } = await supabase
+            .from("events")
+            .delete()
+            .eq("id", id);
+        if (deleteError) {
+            alert(`Failed to delete event: ${deleteError.message}`);
+        } else {
+            await fetchEvents();
+            alert("Event deleted successfully!");
         }
     };
+
     const clearSearch = () => setSearchQuery("");
 
     return (
         <div className="relative min-h-screen text-white">
             <FullScreenBackground />
-            <AdminNavbar />
             <main className="relative z-10 max-w-7xl mx-auto py-8 px-4 sm:px-6 lg:px-8 mt-20 sm:mt-24">
                 <div className="bg-black/60 backdrop-blur-xl shadow-2xl rounded-3xl p-6 sm:p-8 border border-gray-700/50 space-y-8">
-                    <div className="flex flex-col md:flex-row justify-between md:items-center gap-4 md:gap-6">
-                        <h1 className="text-3xl sm:text-4xl font-bold tracking-tight text-transparent bg-clip-text bg-gradient-to-r from-gray-200 via-white to-gray-400">
-                            Event Management
+                    <div className="flex justify-between items-center gap-4 flex-wrap">
+                        <h1 className="text-3xl font-bold tracking-tight">
+                            Manage Events
                         </h1>
-                        <div className="relative w-full md:w-auto md:min-w-[320px]">
-                            <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
-                                <Search className="h-5 w-5 text-gray-400" />
-                            </div>
+                        <div className="flex gap-2">
+                            <Link href="/admin/events/create">
+                                <Button variant="default" className="gap-2">
+                                    <PlusCircle size={18} /> New Event
+                                </Button>
+                            </Link>
+                            <Button
+                                variant="destructive"
+                                onClick={handleBulkDelete}
+                                disabled={
+                                    isBulkDeleting ||
+                                    selectedEvents.length === 0
+                                }
+                            >
+                                {isBulkDeleting ? (
+                                    <span className="flex items-center gap-2">
+                                        <Loader2
+                                            className="animate-spin"
+                                            size={16}
+                                        />{" "}
+                                        Deleting...
+                                    </span>
+                                ) : (
+                                    <span className="flex items-center gap-2">
+                                        <Trash2 size={16} /> Delete Selected
+                                    </span>
+                                )}
+                            </Button>
+                        </div>
+                    </div>
+
+                    <div className="relative mt-6">
+                        <div className="relative">
                             <input
                                 type="text"
-                                className="w-full py-2.5 pl-10 pr-10 rounded-xl bg-black/50 border border-gray-600 text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-colors"
-                                placeholder="Search by title, location, ID..."
+                                placeholder="Search events..."
                                 value={searchQuery}
                                 onChange={(e) => setSearchQuery(e.target.value)}
+                                className="w-full pl-10 pr-10 py-2 rounded-lg bg-gray-800 text-white border border-gray-600 focus:outline-none focus:ring-2 focus:ring-blue-500"
+                            />
+                            <Search
+                                className="absolute left-3 top-2.5 text-gray-400"
+                                size={18}
                             />
                             {searchQuery && (
                                 <button
                                     onClick={clearSearch}
-                                    className="absolute inset-y-0 right-0 pr-3 flex items-center text-gray-400 hover:text-white"
+                                    className="absolute right-3 top-2.5 text-gray-400 hover:text-white"
                                     aria-label="Clear search"
                                 >
-                                    <X className="h-5 w-5" />
+                                    <X size={18} />
                                 </button>
                             )}
                         </div>
                     </div>
 
-                    <div className="flex flex-col sm:flex-row gap-3 sm:gap-4 items-start sm:items-center flex-wrap">
-                        <Button asChild variant="outline" className="w-full sm:w-auto text-green-400 !p-6 rounded-full font-semibold shadow-md  transition-all">
-                            <Link href="/admin/events/create" className="flex items-center gap-2">
-                                <PlusCircle size={20} /> Create New
-                            </Link>
-                        </Button>
-                        <Button asChild variant="outline" className="w-full sm:w-auto border-sky-500 text-sky-300 hover:bg-sky-500/20 hover:text-sky-200 !p-6 rounded-full font-semibold shadow hover:shadow-sky-500/20 transition-all">
-                            <Link href="/admin/import" className="flex items-center gap-2">
-                                <UploadCloud size={20} /> Import Events
-                            </Link>
-                        </Button>
-                        {selectedEvents.length > 0 && (
-                            <Button
-                                onClick={handleBulkDelete}
-                                disabled={isBulkDeleting}
-                                variant="destructive" // This variant already provides good red styling
-                                className="w-full sm:w-auto !p-6 rounded-full font-semibold flex items-center gap-2 sm:ml-auto shadow-md hover:shadow-red-500/30 transition-all bg-red-600 hover:bg-red-500 text-white" // Ensured consistency
-                            >
-                                {isBulkDeleting ? <Loader2 size={20} className="animate-spin mr-2" /> : <Trash2 size={20} className="mr-1.5" />} {/* Adjusted icon size and margin */}
-                                {isBulkDeleting ? "Deleting..." : `Delete (${selectedEvents.length})`}
-                            </Button>
-                        )}
-                    </div>
+                    {error && (
+                        <Alert variant="destructive" className="mt-4">
+                            <AlertTitle>Error</AlertTitle>
+                            <AlertDescription>{error}</AlertDescription>
+                        </Alert>
+                    )}
 
-                    <div className="w-full">
-                        {loading ? (
-                            <div className="border border-gray-700/70 rounded-xl p-6 bg-black/30 animate-pulse space-y-4">
-                                <div className="h-8 w-1/3 bg-gray-600/50 rounded"></div>
-                                {[...Array(5)].map((_, i) => (
-                                    <div
-                                        key={i}
-                                        className="h-10 w-full bg-gray-600/50 rounded"
-                                    ></div>
-                                ))}
-                            </div>
-                        ) : error ? (
-                            <Alert
-                                variant="destructive"
-                                className="bg-red-900/30 border-red-700/50 text-red-300 rounded-xl"
-                            >
-                                <XCircle className="h-5 w-5 text-red-400" />
-                                <AlertTitle className="font-semibold">
-                                    Error
-                                </AlertTitle>
-                                <AlertDescription>{error}</AlertDescription>
-                            </Alert>
-                        ) : (
-                            <div className="border border-gray-700/70 rounded-xl overflow-hidden bg-black/40">
-                                <Table className="min-w-[700px]">
-                                    <TableHeader className="sticky top-0 bg-black/70 backdrop-blur-sm z-10">
-                                        <TableRow className="border-b-gray-700 hover:bg-transparent">
-                                            <AdminColumnHeader
-                                                sortKey="select"
-                                                isActionOrSelect
-                                                className="w-[60px] pl-4 pr-2 py-3.5"
-                                            >
+                    <div className="overflow-x-auto mt-6">
+                        <Table>
+                            <TableHeader>
+                                <TableRow>
+                                    <AdminColumnHeader
+                                        sortKey="select"
+                                        isActionOrSelect
+                                        className="w-4"
+                                    >
+                                        <Checkbox
+                                            checked={
+                                                selectedEvents.length ===
+                                                    sortedFilteredEvents.length &&
+                                                sortedFilteredEvents.length > 0
+                                            }
+                                            onCheckedChange={(checked) =>
+                                                handleSelectAll(
+                                                    checked as boolean
+                                                )
+                                            }
+                                        />
+                                    </AdminColumnHeader>
+                                    <AdminColumnHeader
+                                        sortKey="title"
+                                        currentSort={sortConfig}
+                                        requestSort={requestSortAdmin}
+                                    >
+                                        Title
+                                    </AdminColumnHeader>
+                                    <AdminColumnHeader
+                                        sortKey="location"
+                                        currentSort={sortConfig}
+                                        requestSort={requestSortAdmin}
+                                    >
+                                        Location
+                                    </AdminColumnHeader>
+                                    <AdminColumnHeader
+                                        sortKey="start_time"
+                                        currentSort={sortConfig}
+                                        requestSort={requestSortAdmin}
+                                    >
+                                        Start Time
+                                    </AdminColumnHeader>
+                                    <AdminColumnHeader
+                                        sortKey="end_time"
+                                        currentSort={sortConfig}
+                                        requestSort={requestSortAdmin}
+                                    >
+                                        End Time
+                                    </AdminColumnHeader>
+                                    <AdminColumnHeader
+                                        sortKey="actions"
+                                        isActionOrSelect
+                                    >
+                                        Actions
+                                    </AdminColumnHeader>
+                                </TableRow>
+                            </TableHeader>
+                            <TableBody>
+                                {loading ? (
+                                    <TableRow>
+                                        <TableCell
+                                            colSpan={6}
+                                            className="text-center py-10"
+                                        >
+                                            <Loader2 className="animate-spin mx-auto text-gray-400" />
+                                        </TableCell>
+                                    </TableRow>
+                                ) : sortedFilteredEvents.length === 0 ? (
+                                    <TableRow>
+                                        <TableCell
+                                            colSpan={6}
+                                            className="text-center py-10"
+                                        >
+                                            No events found.
+                                        </TableCell>
+                                    </TableRow>
+                                ) : (
+                                    sortedFilteredEvents.map((event) => (
+                                        <TableRow key={event.id}>
+                                            <TableCell>
                                                 <Checkbox
-                                                    aria-label="Select all visible events"
-                                                    checked={
-                                                        isAllFilteredSelected
-                                                    }
+                                                    checked={selectedEvents.includes(
+                                                        event.id
+                                                    )}
                                                     onCheckedChange={(
                                                         checked
                                                     ) =>
-                                                        handleSelectAll(
-                                                            !!checked
+                                                        handleCheckboxChange(
+                                                            event.id,
+                                                            checked as boolean
                                                         )
                                                     }
-                                                    disabled={
-                                                        sortedFilteredEvents.length ===
-                                                        0
-                                                    }
                                                 />
-                                            </AdminColumnHeader>
-                                            <AdminColumnHeader
-                                                sortKey="title"
-                                                currentSort={sortConfig}
-                                                requestSort={requestSortAdmin}
-                                                className="w-[35%] px-3 py-3.5"
-                                            >
-                                                Title
-                                            </AdminColumnHeader>
-                                            <AdminColumnHeader
-                                                sortKey="start_time"
-                                                currentSort={sortConfig}
-                                                requestSort={requestSortAdmin}
-                                                className="w-[25%] px-3 py-3.5"
-                                            >
-                                                Start Time
-                                            </AdminColumnHeader>
-                                            <AdminColumnHeader
-                                                sortKey="location"
-                                                currentSort={sortConfig}
-                                                requestSort={requestSortAdmin}
-                                                className="hidden md:table-cell w-[20%] px-3 py-3.5"
-                                            >
-                                                Location
-                                            </AdminColumnHeader>
-                                            <AdminColumnHeader
-                                                sortKey="actions"
-                                                isActionOrSelect
-                                                className="w-[15%] text-right pr-4 py-3.5"
-                                            >
-                                                Actions
-                                            </AdminColumnHeader>
-                                        </TableRow>
-                                    </TableHeader>
-                                    <TableBody className="divide-y divide-gray-800/70">
-                                        {sortedFilteredEvents.length > 0 ? (
-                                            sortedFilteredEvents.map(
-                                                (
-                                                    event: EventData // Typed event here
-                                                ) => (
-                                                    <TableRow
-                                                        key={event.id}
-                                                        className="hover:bg-gray-500/10 transition-colors group"
-                                                    >
-                                                        <TableCell className="pl-4 pr-2 py-3">
-                                                            <Checkbox
-                                                                aria-label={`Select event ${event.title}`}
-                                                                checked={selectedEvents.includes(
-                                                                    event.id
-                                                                )}
-                                                                onCheckedChange={(
-                                                                    checked
-                                                                ) =>
-                                                                    handleCheckboxChange(
-                                                                        event.id,
-                                                                        !!checked
-                                                                    )
-                                                                }
-                                                            />
-                                                        </TableCell>
-                                                        <TableCell className="font-medium text-gray-100 group-hover:text-white py-3 pr-3 truncate max-w-xs">
-                                                            <Link
-                                                                href={`/events/${event.id}`}
-                                                                target="_blank"
-                                                                className="hover:text-blue-400 hover:underline"
-                                                                title={
-                                                                    event.title
-                                                                }
-                                                            >
-                                                                {event.title}
-                                                            </Link>
-                                                        </TableCell>
-                                                        <TableCell className="text-gray-300 py-3 pr-3 whitespace-nowrap">
-                                                            {new Date(
-                                                                event.start_time
-                                                            ).toLocaleString(
-                                                                undefined,
-                                                                {
-                                                                    dateStyle:
-                                                                        "medium",
-                                                                    timeStyle:
-                                                                        "short",
-                                                                }
-                                                            )}
-                                                        </TableCell>
-                                                        <TableCell className="text-gray-300 py-3 pr-3 hidden md:table-cell truncate max-w-[200px]">
-                                                            {event.location ||
-                                                                "N/A"}
-                                                        </TableCell>
-                                                        <TableCell className="text-right space-x-1 py-3 pr-4">
-                                                            <Button
-                                                                asChild
-                                                                variant="ghost"
-                                                                size="icon"
-                                                                className="h-9 w-9 text-blue-400 hover:text-blue-300 hover:bg-blue-500/15 rounded-full"
-                                                            >
-                                                                <Link
-                                                                    href={`/admin/events/edit/${event.id}`}
-                                                                >
-                                                                    {" "}
-                                                                    <Edit3
-                                                                        size={
-                                                                            16
-                                                                        }
-                                                                    />{" "}
-                                                                </Link>
-                                                            </Button>
-                                                            <Button
-                                                                variant="ghost"
-                                                                size="icon"
-                                                                onClick={() =>
-                                                                    handleDeleteEvent(
-                                                                        event.id,
-                                                                        event.title
-                                                                    )
-                                                                }
-                                                                className="h-9 w-9 text-red-400 hover:text-red-300 hover:bg-red-500/15 rounded-full"
-                                                            >
-                                                                <Trash2
-                                                                    size={16}
-                                                                />
-                                                            </Button>
-                                                        </TableCell>
-                                                    </TableRow>
-                                                )
-                                            )
-                                        ) : (
-                                            <TableRow className="hover:bg-transparent">
-                                                <TableCell
-                                                    colSpan={5}
-                                                    className="h-32 text-center text-gray-400 text-lg"
+                                            </TableCell>
+                                            <TableCell>{event.title}</TableCell>
+                                            <TableCell>
+                                                {event.location}
+                                            </TableCell>
+                                            <TableCell>
+                                                {event.start_time
+                                                    ? new Date(
+                                                          event.start_time
+                                                      ).toLocaleString()
+                                                    : "-"}
+                                            </TableCell>
+                                            <TableCell>
+                                                {event.end_time
+                                                    ? new Date(
+                                                          event.end_time
+                                                      ).toLocaleString()
+                                                    : "-"}
+                                            </TableCell>
+                                            <TableCell className="flex gap-2">
+                                                <Link
+                                                    href={`/admin/events/${event.id}`}
                                                 >
-                                                    {searchQuery
-                                                        ? "No events match your search."
-                                                        : "No events to display."}
-                                                </TableCell>
-                                            </TableRow>
-                                        )}
-                                    </TableBody>
-                                </Table>
-                            </div>
-                        )}
+                                                    <Button
+                                                        size="sm"
+                                                        variant="outline"
+                                                    >
+                                                        <Edit3 size={14} />
+                                                    </Button>
+                                                </Link>
+                                                <Button
+                                                    size="sm"
+                                                    variant="destructive"
+                                                    onClick={() =>
+                                                        handleDeleteEvent(
+                                                            event.id,
+                                                            event.title
+                                                        )
+                                                    }
+                                                >
+                                                    <Trash2 size={14} />
+                                                </Button>
+                                            </TableCell>
+                                        </TableRow>
+                                    ))
+                                )}
+                            </TableBody>
+                        </Table>
                     </div>
                 </div>
             </main>

@@ -1,24 +1,23 @@
-// src/components/AdminNavbar.tsx
 "use client";
 
-import React, { useState, useRef, useLayoutEffect } from "react";
+import { useEffect, useState, useRef, useLayoutEffect } from "react";
+import { supabase } from "@/lib/supabaseClient";
 import Link from "next/link";
 import { useRouter, usePathname } from "next/navigation";
 import { IoMenu, IoClose } from "react-icons/io5";
 import { motion, AnimatePresence } from "framer-motion";
-import { Button } from "@/components/ui/button";
 import {
     LayoutDashboard,
-    CalendarDays,
-    // ArrowLeftToLine, // Removed
+    ChevronDown,
+    Calendar,
+    PlusCircle,
+    Upload,
+    List,
 } from "lucide-react";
 
-const ADMIN_NAV_LINKS_CONFIG = [
-    { href: "/admin", label: "Dashboard", icon: LayoutDashboard, exact: true },
-    { href: "/admin/events", label: "Events", icon: CalendarDays },
-];
-
 const AdminNavbar = () => {
+    const [user, setUser] = useState<any | null>(null);
+    const [menuOpen, setMenuOpen] = useState(false); // This state will control the externally placed mobile menu
     const router = useRouter();
     const pathname = usePathname();
     const navLinksRef = useRef<{ [key: string]: HTMLAnchorElement | null }>({});
@@ -26,138 +25,250 @@ const AdminNavbar = () => {
         width: number;
         left: number;
     } | null>(null);
-    const [menuOpen, setMenuOpen] = useState(false);
+    const [isEventsDropdownOpen, setIsEventsDropdownOpen] = useState(false);
+    const [isMobileEventsMenuOpen, setIsMobileEventsMenuOpen] = useState(false);
 
-    const adminNavLinks = ADMIN_NAV_LINKS_CONFIG;
+    useEffect(() => {
+        const fetchUser = async () => {
+            const { data: authData, error: authError } =
+                await supabase.auth.getUser();
+            if (authError) {
+                console.error("Error fetching auth user:", authError);
+                setUser(null);
+                return;
+            }
+            if (authData?.user) {
+                setUser(authData.user);
+            } else {
+                setUser(null);
+            }
+        };
+        fetchUser();
+    }, []);
 
     useLayoutEffect(() => {
-        let activePathConfig: (typeof adminNavLinks)[0] | undefined;
-        activePathConfig = adminNavLinks.find((link) => link.href === pathname);
-        if (!activePathConfig) {
-            activePathConfig = adminNavLinks
-                .filter((link) => !link.exact)
-                .sort((a, b) => b.href.length - a.href.length)
-                .find((link) => pathname.startsWith(link.href));
+        setActiveIndicatorProps(null);
+        const activeLink = navLinksRef.current[pathname];
+        if (activeLink) {
+            setActiveIndicatorProps({
+                width: activeLink.offsetWidth,
+                left: activeLink.offsetLeft,
+            });
         }
-        if (!activePathConfig && pathname.startsWith("/admin") && adminNavLinks.some((l) => l.href === "/admin")) {
-            activePathConfig = adminNavLinks.find((l) => l.href === "/admin");
-        }
-        const activeLinkElement = activePathConfig ? navLinksRef.current[activePathConfig.href] : null;
-        if (activeLinkElement) {
-            const newProps = { width: activeLinkElement.offsetWidth, left: activeLinkElement.offsetLeft };
-            setActiveIndicatorProps((prevProps) => (prevProps?.width === newProps.width && prevProps?.left === newProps.left ? prevProps : newProps));
-        } else {
-            setActiveIndicatorProps(null);
-        }
-    }, [pathname, adminNavLinks]);
+    }, [pathname]);
 
+    // Close mobile menu and sub-menu when a main link is clicked
     const handleLinkClick = (path: string) => {
         setMenuOpen(false);
+        setIsMobileEventsMenuOpen(false);
+        router.push(path);
+        const ref = navLinksRef.current[path];
+        if (ref) {
+            setActiveIndicatorProps({
+                width: ref.offsetWidth,
+                left: ref.offsetLeft,
+            });
+        }
+    };
+
+    // Close mobile menu and sub-menu when a sub-menu item is clicked
+    const handleSubMenuClick = (path: string) => {
+        setMenuOpen(false);
+        setIsMobileEventsMenuOpen(false);
         router.push(path);
     };
 
-    const isLinkActive = (linkHref: string, isExact?: boolean): boolean => {
-        if (isExact) return pathname === linkHref;
-        if (linkHref === "/admin") return pathname === "/admin" || (pathname.startsWith("/admin") && !adminNavLinks.some(l => l.href !== "/admin" && pathname.startsWith(l.href)));
-        return pathname.startsWith(linkHref);
-    };
+    const adminNavLinks = [
+        {
+            path: "/admin/dashboard",
+            label: "Admin Dashboard",
+            icon: LayoutDashboard,
+        },
+    ];
 
     return (
-        <motion.nav
-            initial={{ y: 120, opacity: 0 }} // Start further down for a more noticeable entry
-            animate={{ y: 0, opacity: 1 }}
-            transition={{ type: "spring", stiffness: 120, damping: 22, delay: 0.3 }}
-            className="fixed bottom-5 left-1/2 transform -translate-x-1/2 w-[90%] md:w-auto md:min-w-[400px] lg:min-w-[480px] max-w-[calc(100%-2.5rem)] shadow-2xl rounded-[3rem] px-4 sm:px-5 py-3 flex justify-between items-center text-white z-40 bg-black/70 backdrop-blur-xl border border-gray-700/60"
-            // Adjusted py-3 for overall navbar height
-        >
-            {/* Admin Panel Title */}
-            <div className="flex-shrink-0">
-                <Link
-                    href="/admin"
-                    className="text-md sm:text-lg font-bold hover:opacity-80 transition z-10 relative pl-1" // Added pl-1 for slight spacing
-                    onClick={() => handleLinkClick("/admin")}
-                >
-                    Admin Panel
-                </Link>
-            </div>
-
-            {/* Desktop Nav - Center Links */}
-            {/* Conditional rendering to hide center links if only one item or adjust layout */}
-            {adminNavLinks.length > 0 && (
-                <div className={`hidden md:flex flex-grow ${adminNavLinks.length === 1 ? 'justify-start pl-8' : 'justify-center'} items-center gap-2 lg:gap-3 relative mx-4`}>
+        <>
+            {/* The actual navbar bar at the bottom */}
+            <motion.nav
+                initial={{ y: 100, opacity: 0 }}
+                animate={{ y: 0, opacity: 1 }}
+                transition={{ type: "spring", stiffness: 100, damping: 20, delay: 0.2 }}
+                className="fixed bottom-4 left-1/2 transform -translate-x-1/2 shadow-lg rounded-full px-2 flex justify-between items-center text-white z-50 backdrop-blur-lg border border-gray-700/50 bg-black/30"
+            >
+                {/* --- Desktop Navigation --- */}
+                <div className="hidden md:flex flex-grow justify-center items-center gap-1 relative h-12">
                     {activeIndicatorProps && (
                         <motion.div
-                            className="absolute bg-slate-100 rounded-full h-[calc(100%-10px)] top-[5px]" // Indicator styling
-                            layoutId="activeAdminBottomLinkIndicator"
+                            className="absolute bg-white/90 rounded-full h-10 top-1/2 -translate-y-1/2"
+                            layoutId="activeIndicator"
                             initial={false}
-                            animate={{ width: activeIndicatorProps.width, left: activeIndicatorProps.left }}
-                            transition={{ type: "spring", stiffness: 380, damping: 30 }}
+                            animate={{
+                                width: activeIndicatorProps.width + 20,
+                                left: activeIndicatorProps.left - 10,
+                            }}
+                            transition={{
+                                type: "spring",
+                                stiffness: 300,
+                                damping: 30,
+                            }}
                         />
                     )}
-                    {adminNavLinks.map((link) => (
-                        <Button
-                            key={link.href}
-                            asChild
-                            variant="ghost"
-                            // Applied !p-6 for very spacious buttons.
-                            // Consider !px-6 !py-4 or !px-5 !py-3 if !p-6 is too much.
-                            className={`relative z-10 !p-6 rounded-full font-medium text-sm hover:bg-gray-700/60 transition-all duration-200
-                                        ${isLinkActive(link.href, link.exact) ? "text-gray-900" : "text-gray-200 hover:text-white"}`}
+
+                    {adminNavLinks.map((navLink) => (
+                        <Link
+                            key={navLink.path}
+                            href={navLink.path}
+                            ref={(el) => {
+                                navLinksRef.current[navLink.path] = el;
+                            }}
+                            onClick={(e) => {
+                                e.preventDefault();
+                                handleLinkClick(navLink.path); // Use existing handler
+                            }}
+                            className={`relative z-10 px-4 py-2 rounded-full font-semibold text-sm lg:text-base transition-colors duration-300 flex items-center gap-2 ${
+                                pathname === navLink.path ? "text-black" : "text-white hover:bg-white/10"
+                            }`}
                         >
-                            <Link href={link.href} onClick={() => handleLinkClick(link.href)}
-                                ref={(el: HTMLAnchorElement | null) => { navLinksRef.current[link.href] = el; }}
-                                className="flex items-center gap-2.5"> {/* Increased gap */}
-                                <link.icon className="w-5 h-5" />
-                                {link.label}
-                            </Link>
-                        </Button>
+                            <navLink.icon className="w-4 h-4" />
+                            {navLink.label}
+                        </Link>
                     ))}
+
+                    <div
+                        onMouseEnter={() => setIsEventsDropdownOpen(true)}
+                        onMouseLeave={() => setIsEventsDropdownOpen(false)}
+                        className="relative"
+                    >
+                        <button
+                            className={`relative z-10 px-4 py-2 rounded-full font-semibold text-sm lg:text-base transition-colors duration-300 flex items-center gap-2 cursor-pointer ${
+                                isEventsDropdownOpen ? "bg-white/10 text-white" : "text-white hover:bg-white/10"
+                            }`}
+                        >
+                            <Calendar className="w-4 h-4" />
+                            Events
+                            <ChevronDown className={`w-4 h-4 ml-1 transition-transform ${isEventsDropdownOpen ? "rotate-180" : ""}`} />
+                        </button>
+                        <AnimatePresence>
+                            {isEventsDropdownOpen && (
+                                <motion.div
+                                    initial={{ opacity: 0, y: 10 }}
+                                    animate={{ opacity: 1, y: 0 }}
+                                    exit={{ opacity: 0, y: 10 }}
+                                    transition={{ duration: 0.2, ease: "easeOut" }}
+                                    className="absolute right-0 bottom-full mb-2 w-56 bg-black/50 backdrop-blur-lg shadow-xl rounded-xl p-2 space-y-1 z-[60] border border-gray-700/50 text-white"
+                                >
+                                    <button
+                                        onClick={() => router.push("/admin/events/create")}
+                                        className="w-full text-left hover:bg-white/10 transition rounded-lg py-2 px-3 cursor-pointer text-sm flex items-center gap-2"
+                                    >
+                                        <PlusCircle className="w-4 h-4" />
+                                        Create Event
+                                    </button>
+                                    <button
+                                        onClick={() => router.push("/admin/events/import")}
+                                        className="w-full text-left hover:bg-white/10 transition rounded-lg py-2 px-3 cursor-pointer text-sm flex items-center gap-2"
+                                    >
+                                        <Upload className="w-4 h-4" />
+                                        Import Event
+                                    </button>
+                                    <button
+                                        onClick={() => router.push("/admin/events")}
+                                        className="w-full text-left hover:bg-white/10 transition rounded-lg py-2 px-3 cursor-pointer text-sm flex items-center gap-2"
+                                    >
+                                        <List className="w-4 h-4" />
+                                        View Events
+                                    </button>
+                                </motion.div>
+                            )}
+                        </AnimatePresence>
+                    </div>
                 </div>
-            )}
 
+                {/* --- Mobile Menu Button (remains inside the nav bar) --- */}
+                <div className="md:hidden z-[51] relative flex items-center justify-center h-12 w-12"> {/* z-index slightly higher to ensure it's above nav's own content if any overlaps */}
+                    <button
+                        onClick={() => setMenuOpen((prev) => !prev)}
+                        aria-label="Toggle menu"
+                        className="z-50 text-white p-2" // This z-index is relative to its parent
+                    >
+                        {menuOpen ? <IoClose size={28} /> : <IoMenu size={28} />}
+                    </button>
+                </div>
+            </motion.nav>
 
-            {/* Mobile Menu Toggle - Now effectively the only item on the right for desktop if links are few */}
-            <div className={`md:hidden ${adminNavLinks.length > 0 ? '' : 'ml-auto'} z-50 relative flex items-center`}> {/* ml-auto if no center links */}
-                <Button
-                    variant="ghost"
-                    size="icon"
-                    onClick={() => setMenuOpen((prev) => !prev)}
-                    className="p-2 rounded-full text-gray-200 hover:text-white hover:bg-gray-700/60 transition-colors h-10 w-10"
-                    aria-label="Toggle menu"
-                >
-                    {menuOpen ? <IoClose size={24} /> : <IoMenu size={24} />}
-                </Button>
-            </div>
-
-            {/* Mobile Menu Overlay */}
+            {/* --- Mobile Menu Overlay (MOVED OUTSIDE the main motion.nav) --- */}
             <AnimatePresence>
                 {menuOpen && (
                     <motion.div
-                        initial={{ opacity: 0, y: "100%" }}
-                        animate={{ opacity: 1, y: 0 }}
-                        exit={{ opacity: 0, y: "100%", transition: { duration: 0.2, ease:"easeIn" } }}
-                        transition={{ type: "spring", stiffness: 200, damping: 25 }}
-                        className="fixed bottom-[calc(3.5rem+1.25rem+1rem)] left-0 right-0 w-[90%] max-w-sm mx-auto bg-black/80 backdrop-blur-xl z-30 flex flex-col items-center justify-center gap-y-4 text-white p-4 rounded-3xl border border-gray-700/50 shadow-2xl"
-                        // Adjusted max-w, gap, and bottom positioning slightly
+                        initial={{ opacity: 0 }}
+                        animate={{ opacity: 1 }}
+                        exit={{ opacity: 0 }}
+                        transition={{ duration: 0.3, ease: "easeInOut" }}
+                        // This z-index is global, z-40 is below the navbar's z-50
+                        // The navbar (and its close button) will be on top of this overlay
+                        className="fixed inset-0 bg-black/80 backdrop-blur-xl z-40 flex flex-col items-center justify-center gap-4 text-white text-lg"
+                        style={{
+                            height: "100vh", // Or use h-screen if preferred
+                        }}
                     >
-                        {adminNavLinks.map((link) => (
-                            <Button
-                                key={`mobile-${link.href}`}
-                                asChild
-                                variant="ghost"
-                                className={`w-full text-lg !p-6 rounded-full transition-colors duration-200 ${isLinkActive(link.href, link.exact) ? "bg-blue-600/80 text-white" : "text-gray-200 hover:bg-gray-700/70"}`}
+                        {adminNavLinks.map((navLink) => (
+                            <button
+                                key={navLink.path}
+                                onClick={() => handleLinkClick(navLink.path)}
+                                className={`font-semibold flex items-center gap-3 py-3 px-6 rounded-lg transition-colors w-60 justify-center ${pathname === navLink.path ? "bg-white/20" : "hover:bg-white/10"}`}
                             >
-                                <Link href={link.href} onClick={() => handleLinkClick(link.href)} className="flex items-center justify-center gap-3">
-                                    <link.icon className="w-5 h-5" />
-                                    {link.label}
-                                </Link>
-                            </Button>
+                                <navLink.icon className="w-5 h-5" />
+                                {navLink.label}
+                            </button>
                         ))}
-                        {/* "Back to Site" removed from mobile menu as well */}
+
+                        <div className="w-60">
+                             <button
+                                onClick={() => setIsMobileEventsMenuOpen(!isMobileEventsMenuOpen)}
+                                className="font-semibold flex items-center gap-3 py-3 px-6 rounded-lg hover:bg-white/10 transition-colors w-full justify-center"
+                            >
+                                <Calendar className="w-5 h-5" />
+                                Events
+                                <ChevronDown className={`w-5 h-5 ml-auto transition-transform ${isMobileEventsMenuOpen ? "rotate-180" : ""}`} />
+                            </button>
+                            <AnimatePresence>
+                                {isMobileEventsMenuOpen && (
+                                    <motion.div
+                                        initial={{ height: 0, opacity: 0 }}
+                                        animate={{ height: "auto", opacity: 1 }}
+                                        exit={{ height: 0, opacity: 0 }}
+                                        transition={{ duration: 0.3, ease: "easeInOut" }}
+                                        className="overflow-hidden flex flex-col items-center space-y-1 mt-2 bg-black/20 backdrop-blur-md rounded-lg p-2 w-full"
+                                    >
+                                        <button
+                                            onClick={() => handleSubMenuClick("/admin/events/create")}
+                                            className="font-medium text-base flex items-center gap-3 py-2.5 px-4 rounded-md hover:bg-white/10 transition-colors w-full justify-center text-gray-200"
+                                        >
+                                            <PlusCircle className="w-5 h-5" />
+                                            Create Event
+                                        </button>
+                                        <button
+                                            onClick={() => handleSubMenuClick("/admin/events/import")}
+                                             className="font-medium text-base flex items-center gap-3 py-2.5 px-4 rounded-md hover:bg-white/10 transition-colors w-full justify-center text-gray-200"
+                                        >
+                                            <Upload className="w-5 h-5" />
+                                            Import Event
+                                        </button>
+                                        <button
+                                            onClick={() => handleSubMenuClick("/admin/events")}
+                                             className="font-medium text-base flex items-center gap-3 py-2.5 px-4 rounded-md hover:bg-white/10 transition-colors w-full justify-center text-gray-200"
+                                        >
+                                            <List className="w-5 h-5" />
+                                            View Events
+                                        </button>
+                                    </motion.div>
+                                )}
+                            </AnimatePresence>
+                         </div>
                     </motion.div>
                 )}
             </AnimatePresence>
-        </motion.nav>
+        </>
     );
 };
 
